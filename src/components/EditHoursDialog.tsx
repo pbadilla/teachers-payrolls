@@ -3,13 +3,14 @@ import { Teacher } from "@/types/teacher";
 
 interface Props {
   teacher: Teacher;
-  onSave: (teacher: Teacher, hours: number, owed: number) => void;
+  currentHours: number;
+  onSave: (teacher: Teacher, hours: number, rate: number) => void;
   onClose: () => void;
 }
 
-export function EditHoursDialog({ teacher, onSave, onClose }: Props) {
-  const [hours, setHours] = useState(teacher.monthlyHours[0] || 0);
-  const [owed, setOwed] = useState(teacher.totalOwed);
+export function EditHoursDialog({ teacher, currentHours, onSave, onClose }: Props) {
+  const [hours, setHours] = useState(currentHours);
+  const [rate, setRate] = useState(teacher.hourlyRate);
 
   return (
     <div className="fixed inset-0 bg-foreground/40 flex items-center justify-center z-50" onClick={onClose}>
@@ -23,7 +24,7 @@ export function EditHoursDialog({ teacher, onSave, onClose }: Props) {
             <div className="text-xs font-mono text-muted-foreground break-all">{teacher.code}</div>
           )}
           <div>
-            <label className="text-xs font-heading uppercase tracking-widest block mb-1">Hores mes</label>
+            <label className="text-xs font-heading uppercase tracking-widest block mb-1">Hores aquest mes</label>
             <input
               type="number"
               value={hours}
@@ -33,17 +34,21 @@ export function EditHoursDialog({ teacher, onSave, onClose }: Props) {
             />
           </div>
           <div>
-            <label className="text-xs font-heading uppercase tracking-widest block mb-1">Deute total (€)</label>
+            <label className="text-xs font-heading uppercase tracking-widest block mb-1">Preu per hora (€)</label>
             <input
               type="number"
               step="0.01"
-              value={owed}
-              onChange={e => setOwed(Number(e.target.value))}
+              value={rate}
+              onChange={e => setRate(Number(e.target.value))}
               className="w-full border border-foreground bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-foreground tabular-nums"
             />
           </div>
+          <div className="border border-foreground p-3 flex justify-between">
+            <span className="text-xs font-heading uppercase tracking-widest">Total</span>
+            <span className="font-mono font-bold tabular-nums text-destructive">{(hours * rate).toFixed(2)} €</span>
+          </div>
           <button
-            onClick={() => onSave(teacher, hours, owed)}
+            onClick={() => onSave(teacher, hours, rate)}
             className="w-full border border-foreground bg-foreground text-background px-4 py-3 text-xs font-heading uppercase tracking-widest hover:bg-foreground/80 transition-colors"
           >
             CONFIRMAR
