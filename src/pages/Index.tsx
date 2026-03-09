@@ -4,6 +4,7 @@ import { initialTeachers, initialRecords } from "@/data/teachers";
 import { TeacherLedger } from "@/components/TeacherLedger";
 import { BalancePanel } from "@/components/BalancePanel";
 import { MonthSelector } from "@/components/MonthSelector";
+import { MonthHistory } from "@/components/MonthHistory";
 
 const now = new Date();
 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -43,15 +44,24 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
-      <div className="max-w-[1400px] mx-auto space-y-4">
+      <div className="max-w-[1600px] mx-auto space-y-4">
         {/* Month selector */}
         <div className="max-w-sm">
           <MonthSelector selectedMonth={selectedMonth} onChange={setSelectedMonth} />
         </div>
 
         <div className="flex flex-col lg:flex-row gap-0">
+          {/* Month History - left sidebar */}
+          <div className="lg:w-[180px] shrink-0">
+            <MonthHistory
+              records={records}
+              selectedMonth={selectedMonth}
+              onChange={setSelectedMonth}
+            />
+          </div>
+
           {/* Main Ledger */}
-          <div className="lg:w-4/5">
+          <div className="flex-1 min-w-0">
             <TeacherLedger
               teachers={teachers}
               records={records}
@@ -65,7 +75,7 @@ const Index = () => {
           </div>
 
           {/* Balance Panel */}
-          <div className="lg:w-1/5">
+          <div className="lg:w-[220px] shrink-0">
             <BalancePanel
               teachers={teachers}
               records={records}
