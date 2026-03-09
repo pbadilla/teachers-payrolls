@@ -1,19 +1,25 @@
 import { useState } from "react";
-import { Teacher } from "@/types/teacher";
+import { Teacher, MonthlyRecord } from "@/types/teacher";
 import { AddTeacherDialog } from "./AddTeacherDialog";
 import { EditHoursDialog } from "./EditHoursDialog";
 
 interface Props {
   teachers: Teacher[];
+  records: MonthlyRecord[];
+  selectedMonth: string;
+  monthLabel: string;
+  onUpdateRecord: (teacherId: string, hours: number) => void;
   onUpdateTeacher: (teacher: Teacher) => void;
   onAddTeacher: (teacher: Omit<Teacher, "id">) => void;
   onDeleteTeacher: (id: string) => void;
-  currentMonth: string;
 }
 
 const ITEMS_PER_PAGE = 15;
 
-export function TeacherLedger({ teachers, onUpdateTeacher, onAddTeacher, onDeleteTeacher, currentMonth }: Props) {
+export function TeacherLedger({
+  teachers, records, selectedMonth, monthLabel,
+  onUpdateRecord, onUpdateTeacher, onAddTeacher, onDeleteTeacher
+}: Props) {
   const [page, setPage] = useState(1);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
@@ -21,11 +27,22 @@ export function TeacherLedger({ teachers, onUpdateTeacher, onAddTeacher, onDelet
   const totalPages = Math.ceil(teachers.length / ITEMS_PER_PAGE);
   const paged = teachers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const totalHours = teachers.reduce((s, t) => s + (t.monthlyHours[0] || 0), 0);
-  const totalOwed = teachers.reduce((s, t) => s + t.totalOwed, 0);
+  const getHours = (teacherId: string) => {
+    const rec = records.find(r => r.teacherId === teacherId && r.month === selectedMonth);
+    return rec?.hours ?? 0;
+  };
 
-  const handleSaveHours = (teacher: Teacher, hours: number, owed: number) => {
-    onUpdateTeacher({ ...teacher, monthlyHours: [hours], totalOwed: owed });
+  const getPayment = (teacher: Teacher) => {
+    const h = getHours(teacher.id);
+    return h * teacher.hourlyRate;
+  };
+
+  const totalHours = teachers.reduce((s, t) => s + getHours(t.id), 0);
+  const totalPayment = teachers.reduce((s, t) => s + getPayment(t), 0);
+
+  const handleSave = (teacher: Teacher, hours: number, rate: number) => {
+    onUpdateRecord(teacher.id, hours);
+    onUpdateTeacher({ ...teacher, hourlyRate: rate });
     setFlashId(teacher.id);
     setTimeout(() => setFlashId(null), 300);
     setEditingTeacher(null);
@@ -36,8 +53,8 @@ export function TeacherLedger({ teachers, onUpdateTeacher, onAddTeacher, onDelet
       {/* Header */}
       <div className="border border-foreground p-4 mb-0 flex items-center justify-between">
         <div>
-          <h1 className="font-heading text-2xl tracking-widest">HORES HIPOTECA</h1>
-          <span className="text-xs font-mono text-muted-foreground">{currentMonth}</span>
+          <h1 className="font-heading text-2xl tracking-widest">NÒMINES PROFES</h1>
+          <span className="text-xs font-mono text-muted-foreground">{monthLabel}</span>
         </div>
         <AddTeacherDialog onAdd={onAddTeacher} />
       </div>
@@ -49,15 +66,18 @@ export function TeacherLedger({ teachers, onUpdateTeacher, onAddTeacher, onDelet
             <tr>
               <th className="ledger-header text-left w-8">#</th>
               <th className="ledger-header text-left">PROFES</th>
-              <th className="ledger-header text-left">CODI</th>
-              <th className="ledger-header text-right">{currentMonth.split(" ")[0]?.toUpperCase()}</th>
-              <th className="ledger-header text-right">DEUTE (€)</th>
-              <th className="ledger-header text-center w-20">ACC.</th>
+              <th className="ledger-header text-left hidden md:table-cell">CODI</th>
+              <th className="ledger-header text-right">HORES</th>
+              <th className="ledger-header text-right hidden sm:table-cell">€/H</th>
+              <th className="ledger-header text-right">TOTAL (€)</th>
+              <th className="ledger-header text-center w-12">✕</th>
             </tr>
           </thead>
           <tbody>
             {paged.map((t, i) => {
               const rowIdx = (page - 1) * ITEMS_PER_PAGE + i + 1;
+              const hours = getHours(t.id);
+              const payment = getPayment(t);
               const isFlashing = flashId === t.id;
               return (
                 <tr
@@ -72,14 +92,13 @@ export function TeacherLedger({ teachers, onUpdateTeacher, onAddTeacher, onDelet
                       <span className="ml-2 text-xs text-muted-foreground">[EFECTIU]</span>
                     )}
                   </td>
-                  <td className="ledger-cell text-xs text-muted-foreground">
+                  <td className="ledger-cell text-xs text-muted-foreground hidden md:table-cell">
                     {t.code || "—"}
                   </td>
-                  <td className="ledger-cell text-right tabular-nums">
-                    {t.monthlyHours[0]}
-                  </td>
-                  <td className={`ledger-cell text-right tabular-nums font-bold ${t.totalOwed > 0 ? "text-destructive" : "text-patina"}`}>
-                    {t.totalOwed > 0 ? t.totalOwed.toFixed(2) : "0.00"}
+                  <td className="ledger-cell text-right tabular-nums">{hours}</td>
+                  <td className="ledger-cell text-right tabular-nums text-muted-foreground hidden sm:table-cell">{t.hourlyRate.toFixed(2)}</td>
+                  <td className={`ledger-cell text-right tabular-nums font-bold ${payment > 0 ? "text-destructive" : "text-patina"}`}>
+                    {payment.toFixed(2)}
                   </td>
                   <td className="ledger-cell text-center">
                     <button
@@ -100,7 +119,8 @@ export function TeacherLedger({ teachers, onUpdateTeacher, onAddTeacher, onDelet
             <tr className="bg-secondary">
               <td className="ledger-header" colSpan={3}>TOTALS</td>
               <td className="ledger-header text-right tabular-nums">{totalHours}</td>
-              <td className="ledger-header text-right tabular-nums text-destructive">{totalOwed.toFixed(2)}</td>
+              <td className="ledger-header text-right tabular-nums hidden sm:table-cell"></td>
+              <td className="ledger-header text-right tabular-nums text-destructive">{totalPayment.toFixed(2)}</td>
               <td className="ledger-header"></td>
             </tr>
           </tfoot>
@@ -133,7 +153,8 @@ export function TeacherLedger({ teachers, onUpdateTeacher, onAddTeacher, onDelet
       {editingTeacher && (
         <EditHoursDialog
           teacher={editingTeacher}
-          onSave={handleSaveHours}
+          currentHours={getHours(editingTeacher.id)}
+          onSave={handleSave}
           onClose={() => setEditingTeacher(null)}
         />
       )}
