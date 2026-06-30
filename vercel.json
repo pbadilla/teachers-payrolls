@@ -5,6 +5,7 @@
   "buildCommand": "pnpm run build",
   "outputDirectory": "dist",
   "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index?path=$1" },
     { "handle": "filesystem" },
     { "src": "/.*", "dest": "/index.html" }
   ]
