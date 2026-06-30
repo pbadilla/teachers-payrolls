@@ -8,6 +8,7 @@ import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { ActivityManager } from "@/components/ActivityManager";
 import { StatsPanel } from "@/components/StatsPanel";
+import { createId } from "@/lib/id";
 
 const now = new Date();
 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -61,7 +62,7 @@ const Index = () => {
     });
   };
 
-  const handleAddActivity = async (name: string) => { const activity = { id: crypto.randomUUID(), name }; try { await api.addActivity(activity); setActivities(p => [...p, activity]); } catch { toast.error("No s'ha pogut afegir l'activitat"); } };
+  const handleAddActivity = async (name: string) => { const activity = { id: createId(), name }; try { await api.addActivity(activity); setActivities(p => [...p, activity]); } catch { toast.error("No s'ha pogut afegir l'activitat"); } };
   const handleDeleteActivity = async (id: string) => { if (teachers.some(t => t.rates?.some(r => r.activityId === id))) { toast.error("Aquesta activitat està assignada a un professor"); return; } try { await api.deleteActivity(id); setActivities(p => p.filter(a => a.id !== id)); } catch { toast.error("No s'ha pogut eliminar l'activitat"); } };
 
   const handleUpdateTeacher = async (updated: Teacher) => {
@@ -76,7 +77,7 @@ const Index = () => {
   };
 
   const handleAdd = async (data: Omit<Teacher, "id">) => {
-    const teacher = { ...data, id: crypto.randomUUID() };
+    const teacher = { ...data, id: createId() };
     try {
       await api.addTeacher(teacher);
       setTeachers(prev => [...prev, teacher]);
