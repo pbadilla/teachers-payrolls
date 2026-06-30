@@ -1,4 +1,4 @@
-import { Teacher, MonthlyRecord } from "@/types/teacher";
+import { Teacher, MonthlyRecord, recordHours, recordPayment } from "@/types/teacher";
 
 interface Props {
   teachers: Teacher[];
@@ -8,8 +8,9 @@ interface Props {
 }
 
 export function BalancePanel({ teachers, records, selectedMonth, monthLabel }: Props) {
-  const getHours = (id: string) => records.find(r => r.teacherId === id && r.month === selectedMonth)?.hours ?? 0;
-  const getPayment = (t: Teacher) => getHours(t.id) * t.hourlyRate;
+  const getRecord = (id: string) => records.find(r => r.teacherId === id && r.month === selectedMonth);
+  const getHours = (id: string) => recordHours(getRecord(id));
+  const getPayment = (t: Teacher) => recordPayment(getRecord(t.id), t);
 
   const totalHours = teachers.reduce((s, t) => s + getHours(t.id), 0);
   const totalPayment = teachers.reduce((s, t) => s + getPayment(t), 0);

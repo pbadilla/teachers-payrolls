@@ -1,14 +1,17 @@
-import { useState } from "react";
-import { Teacher, MonthlyRecord } from "@/types/teacher";
+import { useEffect, useState } from "react";
+import { Activity, HoursEntry, Teacher, MonthlyRecord, recordHours, recordPayment } from "@/types/teacher";
 import { AddTeacherDialog } from "./AddTeacherDialog";
 import { EditHoursDialog } from "./EditHoursDialog";
+import { MonthSelector } from "./MonthSelector";
 
 interface Props {
   teachers: Teacher[];
   records: MonthlyRecord[];
+  activities: Activity[];
   selectedMonth: string;
   monthLabel: string;
-  onUpdateRecord: (teacherId: string, hours: number) => void;
+  onMonthChange: (month: string) => void;
+  onUpdateRecord: (teacherId: string, entries: HoursEntry[]) => void;
   onUpdateTeacher: (teacher: Teacher) => void;
   onAddTeacher: (teacher: Omit<Teacher, "id">) => void;
   onDeleteTeacher: (id: string) => void;
@@ -17,8 +20,8 @@ interface Props {
 const ITEMS_PER_PAGE = 15;
 
 export function TeacherLedger({
-  teachers, records, selectedMonth, monthLabel,
-  onUpdateRecord, onUpdateTeacher, onAddTeacher, onDeleteTeacher
+  teachers, records, activities, selectedMonth, monthLabel,
+  onMonthChange, onUpdateRecord, onUpdateTeacher, onAddTeacher, onDeleteTeacher
 }: Props) {
   const [page, setPage] = useState(1);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
@@ -26,23 +29,31 @@ export function TeacherLedger({
 
   const totalPages = Math.ceil(teachers.length / ITEMS_PER_PAGE);
   const paged = teachers.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const firstItem = teachers.length === 0 ? 0 : (page - 1) * ITEMS_PER_PAGE + 1;
+  const lastItem = Math.min(page * ITEMS_PER_PAGE, teachers.length);
+  const visiblePages = Array.from({ length: totalPages }, (_, i) => i + 1).filter(
+    number => number === 1 || number === totalPages || Math.abs(number - page) <= 1,
+  );
+
+  useEffect(() => {
+    if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
+  }, [page, totalPages]);
 
   const getHours = (teacherId: string) => {
     const rec = records.find(r => r.teacherId === teacherId && r.month === selectedMonth);
-    return rec?.hours ?? 0;
+    return recordHours(rec);
   };
 
   const getPayment = (teacher: Teacher) => {
-    const h = getHours(teacher.id);
-    return h * teacher.hourlyRate;
+    return recordPayment(records.find(r => r.teacherId === teacher.id && r.month === selectedMonth), teacher);
   };
 
   const totalHours = teachers.reduce((s, t) => s + getHours(t.id), 0);
   const totalPayment = teachers.reduce((s, t) => s + getPayment(t), 0);
 
-  const handleSave = (teacher: Teacher, hours: number, rate: number) => {
-    onUpdateRecord(teacher.id, hours);
-    onUpdateTeacher({ ...teacher, hourlyRate: rate });
+  const handleSave = (teacher: Teacher, entries: HoursEntry[]) => {
+    onUpdateRecord(teacher.id, entries);
+    onUpdateTeacher(teacher);
     setFlashId(teacher.id);
     setTimeout(() => setFlashId(null), 300);
     setEditingTeacher(null);
@@ -56,6 +67,7 @@ export function TeacherLedger({
           <h1 className="font-heading text-2xl tracking-widest">NÒMINES PROFES</h1>
           <span className="text-xs font-mono text-muted-foreground">{monthLabel}</span>
         </div>
+        <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
         <AddTeacherDialog onAdd={onAddTeacher} />
       </div>
 
@@ -68,7 +80,7 @@ export function TeacherLedger({
               <th className="ledger-header text-left">PROFES</th>
               <th className="ledger-header text-left hidden md:table-cell">CODI</th>
               <th className="ledger-header text-right">HORES</th>
-              <th className="ledger-header text-right hidden sm:table-cell">€/H</th>
+              <th className="ledger-header text-right hidden sm:table-cell">ACT.</th>
               <th className="ledger-header text-right">TOTAL (€)</th>
               <th className="ledger-header text-center w-12">✕</th>
             </tr>
@@ -82,7 +94,7 @@ export function TeacherLedger({
               return (
                 <tr
                   key={t.id}
-                  className={`cursor-pointer hover:bg-secondary transition-colors ${isFlashing ? "flash-patina" : ""}`}
+                  className={`cursor-pointer transition-colors odd:bg-background even:bg-secondary/55 hover:!bg-secondary ${isFlashing ? "flash-patina" : ""}`}
                   onClick={() => setEditingTeacher(t)}
                 >
                   <td className="ledger-cell text-xs text-muted-foreground">{String(rowIdx).padStart(2, "0")}</td>
@@ -96,7 +108,7 @@ export function TeacherLedger({
                     {t.code || "—"}
                   </td>
                   <td className="ledger-cell text-right tabular-nums">{hours}</td>
-                  <td className="ledger-cell text-right tabular-nums text-muted-foreground hidden sm:table-cell">{t.hourlyRate.toFixed(2)}</td>
+                  <td className="ledger-cell text-right tabular-nums text-muted-foreground hidden sm:table-cell">{(t.rates?.length ?? 0) || 1}</td>
                   <td className={`ledger-cell text-right tabular-nums font-bold ${payment > 0 ? "text-destructive" : "text-patina"}`}>
                     {payment.toFixed(2)}
                   </td>
@@ -129,31 +141,42 @@ export function TeacherLedger({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border border-t-0 border-foreground p-3 flex items-center justify-center gap-6">
-          <button
-            onClick={() => setPage(Math.max(1, page - 1))}
-            disabled={page === 1}
-            className="page-indicator hover:text-foreground disabled:text-muted-foreground transition-colors"
-          >
-            ◄ PREV
-          </button>
-          <span className="page-indicator">
-            [ PÀGINA {String(page).padStart(2, "0")} / {String(totalPages).padStart(2, "0")} ]
+        <div className="border border-t-0 border-foreground p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+            Mostrant {firstItem}–{lastItem} de {teachers.length}
           </span>
-          <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
-            disabled={page === totalPages}
-            className="page-indicator hover:text-foreground disabled:text-muted-foreground transition-colors"
-          >
-            NEXT ►
-          </button>
+
+          <div className="flex items-center border border-foreground">
+            <button onClick={() => setPage(1)} disabled={page === 1} aria-label="Primera pàgina" className="h-9 px-3 border-r border-foreground font-mono text-xs hover:bg-secondary disabled:opacity-25">«</button>
+            <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label="Pàgina anterior" className="h-9 px-3 border-r border-foreground font-mono text-xs hover:bg-secondary disabled:opacity-25">‹</button>
+
+            {visiblePages.map((number, index) => {
+              const previous = visiblePages[index - 1];
+              return <span key={number} className="flex">
+                {previous && number - previous > 1 && <span className="h-9 min-w-9 grid place-items-center border-r border-foreground text-xs">…</span>}
+                <button
+                  onClick={() => setPage(number)}
+                  aria-current={number === page ? "page" : undefined}
+                  className={`h-9 min-w-9 border-r border-foreground font-mono text-xs transition-colors ${number === page ? "bg-foreground text-background" : "hover:bg-secondary"}`}
+                >{String(number).padStart(2, "0")}</button>
+              </span>;
+            })}
+
+            <button onClick={() => setPage(page + 1)} disabled={page === totalPages} aria-label="Pàgina següent" className="h-9 px-3 border-r border-foreground font-mono text-xs hover:bg-secondary disabled:opacity-25">›</button>
+            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} aria-label="Última pàgina" className="h-9 px-3 font-mono text-xs hover:bg-secondary disabled:opacity-25">»</button>
+          </div>
+
+          <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+            Pàgina {page} / {totalPages}
+          </span>
         </div>
       )}
 
       {editingTeacher && (
         <EditHoursDialog
           teacher={editingTeacher}
-          currentHours={getHours(editingTeacher.id)}
+          activities={activities}
+          currentRecord={records.find(r => r.teacherId === editingTeacher.id && r.month === selectedMonth)}
           onSave={handleSave}
           onClose={() => setEditingTeacher(null)}
         />

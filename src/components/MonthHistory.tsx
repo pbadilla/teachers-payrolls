@@ -1,4 +1,4 @@
-import { MONTHS_CA, MonthlyRecord } from "@/types/teacher";
+import { MONTHS_CA, MonthlyRecord, recordHours } from "@/types/teacher";
 
 interface Props {
   records: MonthlyRecord[];
@@ -22,7 +22,7 @@ export function MonthHistory({ records, selectedMonth, onChange }: Props) {
           const [y, mn] = m.split("-").map(Number);
           const label = `${MONTHS_CA[mn - 1]} ${y}`;
           const monthRecords = records.filter(r => r.month === m);
-          const totalHours = monthRecords.reduce((s, r) => s + r.hours, 0);
+          const totalHours = monthRecords.reduce((s, r) => s + recordHours(r), 0);
           const isActive = m === selectedMonth;
 
           return (
