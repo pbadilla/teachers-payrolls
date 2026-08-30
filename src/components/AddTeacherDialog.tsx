@@ -23,7 +23,7 @@ export function AddTeacherDialog({ onAdd }: Props) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="border border-foreground px-4 py-2 text-xs font-heading uppercase tracking-widest hover:bg-foreground hover:text-background transition-colors"
+        className="rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-violet-500/20 transition hover:bg-violet-700"
       >
         + AFEGIR PROFE
       </button>
@@ -31,42 +31,42 @@ export function AddTeacherDialog({ onAdd }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-foreground/40 flex items-center justify-center z-50" onClick={() => setOpen(false)}>
-      <div className="bg-background border border-foreground w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="ledger-header">NOU PROFESSOR</div>
-        <div className="p-4 space-y-3">
-          <div>
-            <label className="text-xs font-heading uppercase tracking-widest block mb-1">Nom</label>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/80 bg-white text-slate-900 shadow-2xl shadow-slate-950/30" onClick={e => e.stopPropagation()}>
+        <div className="border-b border-slate-200 px-6 py-4 text-sm font-extrabold tracking-wide">NOU PROFESSOR</div>
+        <div className="space-y-5 p-6">
+          <div className="space-y-2">
+            <label className="block space-y-2 text-xs font-bold uppercase tracking-wider text-slate-600">Nom</label>
             <input value={name} onChange={e => setName(e.target.value)}
-              className="w-full border border-foreground bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-foreground" />
+              className="block h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10" />
           </div>
-          <div>
-            <label className="text-xs font-heading uppercase tracking-widest block mb-1">Codi (IBAN)</label>
+          <div className="space-y-2">
+            <label className="block space-y-2 text-xs font-bold uppercase tracking-wider text-slate-600">Codi (IBAN)</label>
             <input value={code} onChange={e => setCode(e.target.value)}
-              className="w-full border border-foreground bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-foreground"
+              className="block h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10"
               placeholder="ES00 0000 0000 0000 0000 0000" />
           </div>
-          <div>
-            <label className="text-xs font-heading uppercase tracking-widest block mb-1">Tipus</label>
-            <div className="flex border border-foreground">
-              <button className={`flex-1 px-3 py-2 text-xs font-mono ${type === "coded" ? "bg-foreground text-background" : ""}`}
+          <div className="space-y-2">
+            <label className="block space-y-2 text-xs font-bold uppercase tracking-wider text-slate-600">Tipus</label>
+            <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1">
+              <button className={`rounded-lg px-3 py-2.5 text-xs font-bold transition ${type === "coded" ? "bg-violet-600 text-white shadow-sm" : ""}`}
                 onClick={() => setType("coded")}>TRANSFERÈNCIA</button>
-              <button className={`flex-1 px-3 py-2 text-xs font-mono border-l border-foreground ${type === "efectiu" ? "bg-foreground text-background" : ""}`}
+              <button className={`rounded-lg px-3 py-2.5 text-xs font-bold transition ${type === "efectiu" ? "bg-violet-600 text-white shadow-sm" : ""}`}
                 onClick={() => setType("efectiu")}>EFECTIU</button>
             </div>
           </div>
-          <div>
-            <label className="text-xs font-heading uppercase tracking-widest block mb-1">Preu/hora (€)</label>
+          <div className="space-y-2">
+            <label className="block space-y-2 text-xs font-bold uppercase tracking-wider text-slate-600">Preu/hora (€)</label>
             <input type="number" step="0.01" value={rate} onChange={e => setRate(Number(e.target.value))}
-              className="w-full border border-foreground bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-foreground tabular-nums" />
+              className="block h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 tabular-nums" />
           </div>
-          <div className="flex gap-2 pt-2">
+          <div className="grid grid-cols-2 gap-3 pt-2">
             <button onClick={() => setOpen(false)}
-              className="flex-1 border border-foreground px-4 py-2 text-xs font-heading uppercase tracking-widest hover:bg-secondary transition-colors">
+              className="h-11 rounded-xl border border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-600 transition hover:bg-slate-100">
               CANCEL·LAR
             </button>
             <button onClick={handleSubmit}
-              className="flex-1 border border-foreground bg-foreground text-background px-4 py-2 text-xs font-heading uppercase tracking-widest hover:bg-foreground/80 transition-colors">
+              className="h-11 rounded-xl bg-violet-600 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-violet-500/20 transition hover:bg-violet-700">
               REGISTRAR
             </button>
           </div>

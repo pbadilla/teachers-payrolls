@@ -18,28 +18,28 @@ export function BalancePanel({ teachers, records, selectedMonth, monthLabel }: P
   const efectiuPayment = teachers.filter(t => t.type === "efectiu").reduce((s, t) => s + getPayment(t), 0);
 
   return (
-    <div className="border border-foreground h-fit sticky top-4">
+    <div className="sticky top-4 h-fit overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="ledger-header text-center">RESUM — {monthLabel.toUpperCase()}</div>
       
       <div className="p-4 space-y-4">
-        <div className="border border-foreground p-3">
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
           <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1">Total a pagar</div>
           <div className="text-2xl font-mono font-bold text-destructive tabular-nums">
             {totalPayment.toFixed(2)} €
           </div>
         </div>
 
-        <div className="border border-foreground p-3">
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
           <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1">Total hores</div>
           <div className="text-2xl font-mono font-bold tabular-nums">{totalHours}</div>
         </div>
 
-        <div className="border border-foreground p-3">
+        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
           <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1">Profes</div>
           <div className="text-lg font-mono tabular-nums">{teachers.length}</div>
         </div>
 
-        <div className="border-t border-foreground pt-3 space-y-2">
+        <div className="space-y-2 border-t border-slate-200 pt-3">
           <div className="flex justify-between text-xs font-mono">
             <span className="text-muted-foreground">TRANSFERÈNCIA</span>
             <span className="tabular-nums text-destructive">{codedPayment.toFixed(2)} €</span>
@@ -52,13 +52,13 @@ export function BalancePanel({ teachers, records, selectedMonth, monthLabel }: P
 
         {/* Hours bar */}
         {totalHours > 0 && (
-          <div className="border border-foreground p-3">
+          <div className="rounded-lg border border-slate-200 p-3">
             <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-2">Distribució hores</div>
-            <div className="flex h-4 border border-foreground overflow-hidden">
+            <div className="flex h-3 overflow-hidden rounded-full bg-slate-100">
               {teachers.filter(t => getHours(t.id) > 0).map((t, i) => (
                 <div
                   key={t.id}
-                  className="h-full border-r border-foreground last:border-r-0"
+                  className="h-full border-r border-white last:border-r-0"
                   style={{
                     width: `${(getHours(t.id) / totalHours) * 100}%`,
                     backgroundColor: i % 2 === 0 ? 'hsl(0 0% 10%)' : 'hsl(155 30% 32%)',

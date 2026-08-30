@@ -42,5 +42,5 @@ export function StatsPanel({ teachers, records, activities }: { teachers: Teache
   </div>;
 }
 
-function Stat({ label, value }: { label: string; value: string }) { return <div className="border border-foreground p-5"><div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">{label}</div><div className="mt-2 text-3xl font-mono font-bold">{value}</div></div>; }
-function Chart({ title, children }: { title: string; children: React.ReactNode }) { return <div className="border border-foreground"><div className="ledger-header">{title}</div><div className="p-4">{children}</div></div>; }
+function Stat({ label, value }: { label: string; value: string }) { return <div className="rounded-xl border border-slate-200 bg-white p-5"><div className="text-xs font-heading uppercase tracking-widest text-muted-foreground">{label}</div><div className="mt-2 text-3xl font-mono font-bold">{value}</div></div>; }
+function Chart({ title, children }: { title: string; children: React.ReactNode }) { return <div className="overflow-hidden rounded-xl border border-slate-200 bg-white"><div className="ledger-header">{title}</div><div className="p-4">{children}</div></div>; }

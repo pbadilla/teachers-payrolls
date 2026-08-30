@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Activity, HoursEntry, Teacher, MonthlyRecord, recordHours, recordPayment } from "@/types/teacher";
-import { AddTeacherDialog } from "./AddTeacherDialog";
 import { EditHoursDialog } from "./EditHoursDialog";
 import { MonthSelector } from "./MonthSelector";
 
@@ -13,7 +12,6 @@ interface Props {
   onMonthChange: (month: string) => void;
   onUpdateRecord: (teacherId: string, entries: HoursEntry[]) => void;
   onUpdateTeacher: (teacher: Teacher) => void;
-  onAddTeacher: (teacher: Omit<Teacher, "id">) => void;
   onDeleteTeacher: (id: string) => void;
 }
 
@@ -21,7 +19,7 @@ const ITEMS_PER_PAGE = 15;
 
 export function TeacherLedger({
   teachers, records, activities, selectedMonth, monthLabel,
-  onMonthChange, onUpdateRecord, onUpdateTeacher, onAddTeacher, onDeleteTeacher
+  onMonthChange, onUpdateRecord, onUpdateTeacher, onDeleteTeacher
 }: Props) {
   const [page, setPage] = useState(1);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
@@ -60,20 +58,19 @@ export function TeacherLedger({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-hidden rounded-xl border border-slate-200 bg-white">
       {/* Header */}
-      <div className="border border-foreground p-4 mb-0 flex items-center justify-between">
+      <div className="flex flex-col gap-4 border-b border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-heading text-2xl tracking-widest">NÒMINES PROFES</h1>
+          <h1 className="font-heading text-2xl tracking-tight">NÒMINES PROFES</h1>
           <span className="text-xs font-mono text-muted-foreground">{monthLabel}</span>
         </div>
         <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
-        <AddTeacherDialog onAdd={onAddTeacher} />
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
+        <table className="w-full border-separate border-spacing-0">
           <thead>
             <tr>
               <th className="ledger-header text-left w-8">#</th>
@@ -94,7 +91,7 @@ export function TeacherLedger({
               return (
                 <tr
                   key={t.id}
-                  className={`cursor-pointer transition-colors odd:bg-background even:bg-secondary/55 hover:!bg-secondary ${isFlashing ? "flash-patina" : ""}`}
+                  className={`cursor-pointer bg-white transition-colors even:bg-slate-50/70 hover:!bg-violet-50/70 ${isFlashing ? "flash-patina" : ""}`}
                   onClick={() => setEditingTeacher(t)}
                 >
                   <td className="ledger-cell text-xs text-muted-foreground">{String(rowIdx).padStart(2, "0")}</td>
@@ -128,7 +125,7 @@ export function TeacherLedger({
             })}
           </tbody>
           <tfoot>
-            <tr className="bg-secondary">
+            <tr className="bg-slate-50">
               <td className="ledger-header" colSpan={3}>TOTALS</td>
               <td className="ledger-header text-right tabular-nums">{totalHours}</td>
               <td className="ledger-header text-right tabular-nums hidden sm:table-cell"></td>
@@ -141,29 +138,29 @@ export function TeacherLedger({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="border border-t-0 border-foreground p-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-slate-200 bg-white p-3 sm:flex-row">
           <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
             Mostrant {firstItem}–{lastItem} de {teachers.length}
           </span>
 
-          <div className="flex items-center border border-foreground">
-            <button onClick={() => setPage(1)} disabled={page === 1} aria-label="Primera pàgina" className="h-9 px-3 border-r border-foreground font-mono text-xs hover:bg-secondary disabled:opacity-25">«</button>
-            <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label="Pàgina anterior" className="h-9 px-3 border-r border-foreground font-mono text-xs hover:bg-secondary disabled:opacity-25">‹</button>
+          <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+            <button onClick={() => setPage(1)} disabled={page === 1} aria-label="Primera pàgina" className="h-9 border-r border-slate-200 px-3 font-mono text-xs hover:bg-slate-50 disabled:opacity-25">«</button>
+            <button onClick={() => setPage(page - 1)} disabled={page === 1} aria-label="Pàgina anterior" className="h-9 border-r border-slate-200 px-3 font-mono text-xs hover:bg-slate-50 disabled:opacity-25">‹</button>
 
             {visiblePages.map((number, index) => {
               const previous = visiblePages[index - 1];
               return <span key={number} className="flex">
-                {previous && number - previous > 1 && <span className="h-9 min-w-9 grid place-items-center border-r border-foreground text-xs">…</span>}
+                {previous && number - previous > 1 && <span className="grid h-9 min-w-9 place-items-center border-r border-slate-200 text-xs">…</span>}
                 <button
                   onClick={() => setPage(number)}
                   aria-current={number === page ? "page" : undefined}
-                  className={`h-9 min-w-9 border-r border-foreground font-mono text-xs transition-colors ${number === page ? "bg-foreground text-background" : "hover:bg-secondary"}`}
+                  className={`h-9 min-w-9 border-r border-slate-200 font-mono text-xs transition-colors ${number === page ? "bg-violet-600 text-white" : "hover:bg-slate-50"}`}
                 >{String(number).padStart(2, "0")}</button>
               </span>;
             })}
 
-            <button onClick={() => setPage(page + 1)} disabled={page === totalPages} aria-label="Pàgina següent" className="h-9 px-3 border-r border-foreground font-mono text-xs hover:bg-secondary disabled:opacity-25">›</button>
-            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} aria-label="Última pàgina" className="h-9 px-3 font-mono text-xs hover:bg-secondary disabled:opacity-25">»</button>
+            <button onClick={() => setPage(page + 1)} disabled={page === totalPages} aria-label="Pàgina següent" className="h-9 border-r border-slate-200 px-3 font-mono text-xs hover:bg-slate-50 disabled:opacity-25">›</button>
+            <button onClick={() => setPage(totalPages)} disabled={page === totalPages} aria-label="Última pàgina" className="h-9 px-3 font-mono text-xs hover:bg-slate-50 disabled:opacity-25">»</button>
           </div>
 
           <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">

@@ -15,7 +15,7 @@ export function MonthHistory({ records, selectedMonth, onChange }: Props) {
   const months = Array.from(monthsSet).sort().reverse();
 
   return (
-    <div className="border border-foreground">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="ledger-header text-center">HISTORIAL</div>
       <div className="max-h-[400px] overflow-y-auto">
         {months.map(m => {
@@ -29,8 +29,8 @@ export function MonthHistory({ records, selectedMonth, onChange }: Props) {
             <button
               key={m}
               onClick={() => onChange(m)}
-              className={`w-full text-left px-3 py-2 border-b border-foreground flex justify-between items-center transition-colors ${
-                isActive ? "bg-foreground text-background" : "hover:bg-secondary"
+              className={`flex w-full items-center justify-between border-b border-slate-200 px-3 py-2.5 text-left transition-colors ${
+                isActive ? "bg-violet-600 text-white" : "hover:bg-slate-50"
               }`}
             >
               <span className="text-xs font-heading uppercase tracking-widest">{label}</span>
@@ -62,7 +62,7 @@ function NewMonthButton({ records, selectedMonth, onChange }: { records: Monthly
   return (
     <button
       onClick={addNextMonth}
-      className="w-full px-3 py-2 text-xs font-heading uppercase tracking-widest text-center hover:bg-foreground hover:text-background transition-colors"
+      className="w-full px-3 py-2.5 text-center text-xs font-heading uppercase tracking-widest text-violet-700 transition-colors hover:bg-violet-50"
     >
       + NOU MES
     </button>

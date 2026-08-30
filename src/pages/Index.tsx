@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
-import { Activity, HoursEntry, Teacher, MonthlyRecord, MONTHS_CA } from "@/types/teacher";
+import { Activity, HoursEntry, Teacher, MonthlyRecord, MONTHS_CA, recordHours } from "@/types/teacher";
 import { initialTeachers, initialRecords } from "@/data/teachers";
 import { TeacherLedger } from "@/components/TeacherLedger";
 import { BalancePanel } from "@/components/BalancePanel";
-import { MonthHistory } from "@/components/MonthHistory";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { ActivityManager } from "@/components/ActivityManager";
 import { StatsPanel } from "@/components/StatsPanel";
 import { createId } from "@/lib/id";
+import { Button, Card } from "@heroui/react";
+import { BarChart3, BookOpenCheck, GraduationCap, History, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { AddTeacherDialog } from "@/components/AddTeacherDialog";
 
 const now = new Date();
 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -41,6 +44,12 @@ const Index = () => {
 
   const [year, monthNum] = selectedMonth.split("-").map(Number);
   const monthLabel = `${MONTHS_CA[monthNum - 1]} ${year}`;
+  const teachersWithHours = teachers.filter((teacher) => {
+    const record = records.find(
+      (item) => item.teacherId === teacher.id && item.month === selectedMonth,
+    );
+    return recordHours(record) > 0;
+  });
 
   const handleUpdateRecord = async (teacherId: string, entries: HoursEntry[]) => {
     const hours = entries.reduce((sum, entry) => sum + entry.hours, 0);
@@ -99,35 +108,40 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 lg:p-6">
-      <div className="max-w-[1600px] mx-auto space-y-4">
-        <nav className="flex border border-foreground w-fit">
-          <button
-            onClick={() => setActiveTab("payroll")}
-            className={`px-6 py-3 text-xs font-heading uppercase tracking-widest ${activeTab === "payroll" ? "bg-foreground text-background" : "hover:bg-secondary"}`}
-          >
-            Nòmines
-          </button>
-          <button
-            onClick={() => setActiveTab("activities")}
-            className={`px-6 py-3 border-l border-foreground text-xs font-heading uppercase tracking-widest ${activeTab === "activities" ? "bg-foreground text-background" : "hover:bg-secondary"}`}
-          >
-            Activitats / Escoles
-          </button>
-          <button
-            onClick={() => setActiveTab("stats")}
-            className={`px-6 py-3 border-l border-foreground text-xs font-heading uppercase tracking-widest ${activeTab === "stats" ? "bg-foreground text-background" : "hover:bg-secondary"}`}
-          >
-            Estadístiques
-          </button>
-        </nav>
+    <div className="min-h-screen p-4 lg:p-8">
+      <div className="mx-auto max-w-[1600px] space-y-6">
+        <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white/90 shadow-lg shadow-violet-950/5 backdrop-blur-xl">
+          <Card.Content className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/25">
+                <GraduationCap className="h-6 w-6" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2"><h1 className="text-xl font-extrabold normal-case tracking-tight lg:text-2xl">Teachers Payrolls</h1><Sparkles className="h-4 w-4 text-violet-500" /></div>
+                <p className="mt-1 text-sm text-muted-foreground">Gestió de nòmines, hores i activitats</p>
+              </div>
+            </div>
+            <nav className="flex flex-wrap gap-2" aria-label="Seccions principals">
+              <Button variant={activeTab === "payroll" ? "primary" : "ghost"} onPress={() => setActiveTab("payroll")}><BookOpenCheck className="h-4 w-4" />Nòmines</Button>
+              <Button variant={activeTab === "activities" ? "primary" : "ghost"} onPress={() => setActiveTab("activities")}><GraduationCap className="h-4 w-4" />Activitats / Escoles</Button>
+              <Button variant={activeTab === "stats" ? "primary" : "ghost"} onPress={() => setActiveTab("stats")}><BarChart3 className="h-4 w-4" />Estadístiques</Button>
+            </nav>
+          </Card.Content>
+        </Card>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm backdrop-blur-xl">
+          <Link to="/history" className="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">
+            <History className="h-4 w-4" />Historial
+          </Link>
+          <AddTeacherDialog onAdd={handleAdd} />
+        </div>
 
         {activeTab === "payroll" ? (
-        <div className="flex flex-col lg:flex-row gap-0">
+        <div className="flex flex-col gap-5 lg:flex-row">
           {/* Main Ledger */}
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1 shadow-lg shadow-violet-950/5">
             <TeacherLedger
-              teachers={teachers}
+              teachers={teachersWithHours}
               records={records}
               activities={activities}
               selectedMonth={selectedMonth}
@@ -135,18 +149,12 @@ const Index = () => {
               onMonthChange={setSelectedMonth}
               onUpdateRecord={handleUpdateRecord}
               onUpdateTeacher={handleUpdateTeacher}
-              onAddTeacher={handleAdd}
               onDeleteTeacher={handleDelete}
             />
           </div>
 
-          {/* History and balance - right sidebar */}
-          <div className="lg:w-[220px] shrink-0 space-y-4">
-            <MonthHistory
-              records={records}
-              selectedMonth={selectedMonth}
-              onChange={setSelectedMonth}
-            />
+          {/* Monthly balance - right sidebar */}
+          <div className="shrink-0 space-y-4 lg:w-[250px]">
             <BalancePanel
               teachers={teachers}
               records={records}
@@ -156,11 +164,11 @@ const Index = () => {
           </div>
         </div>
         ) : activeTab === "activities" ? (
-          <div className="max-w-2xl">
+          <div className="max-w-2xl rounded-xl border border-slate-200 bg-white/90 p-5 shadow-lg shadow-violet-950/5 backdrop-blur-xl">
             <ActivityManager activities={activities} onAdd={handleAddActivity} onDelete={handleDeleteActivity} />
           </div>
         ) : (
-          <StatsPanel teachers={teachers} records={records} activities={activities} />
+          <div className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-lg shadow-violet-950/5 backdrop-blur-xl"><StatsPanel teachers={teachers} records={records} activities={activities} /></div>
         )}
       </div>
     </div>

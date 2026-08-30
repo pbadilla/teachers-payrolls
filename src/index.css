@@ -1,50 +1,49 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@import "@heroui/styles";
+@config "../tailwind.config.ts";
 
 @layer base {
   :root {
-    /* Drafting Paper */
-    --background: 43 18% 90%;
-    --foreground: 0 0% 10%;
+    --background: 240 33% 98%;
+    --foreground: 243 38% 17%;
 
     /* Carbon */
-    --carbon: 0 0% 10%;
-    --carbon-foreground: 43 18% 90%;
+    --carbon: 243 38% 17%;
+    --carbon-foreground: 240 33% 98%;
 
     /* Rust - deficit/owed */
-    --destructive: 9 60% 45%;
-    --destructive-foreground: 43 18% 90%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Patina - surplus/paid */
-    --patina: 155 30% 32%;
-    --patina-foreground: 43 18% 90%;
+    --patina: 158 64% 40%;
+    --patina-foreground: 0 0% 100%;
 
-    --primary: 0 0% 10%;
-    --primary-foreground: 43 18% 90%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 43 12% 84%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary: 252 50% 95%;
+    --secondary-foreground: 243 38% 24%;
 
-    --muted: 43 12% 84%;
-    --muted-foreground: 0 0% 35%;
+    --muted: 240 24% 94%;
+    --muted-foreground: 240 9% 46%;
 
-    --accent: 43 12% 84%;
-    --accent-foreground: 0 0% 10%;
+    --accent: 265 70% 93%;
+    --accent-foreground: 262 83% 38%;
 
-    --card: 43 18% 92%;
-    --card-foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 243 38% 17%;
 
-    --popover: 43 18% 92%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 243 38% 17%;
 
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
-    --ring: 0 0% 10%;
+    --border: 240 20% 89%;
+    --input: 240 20% 89%;
+    --ring: 262 83% 58%;
 
-    --radius: 0px;
+    --radius: 16px;
 
     --sidebar-background: 43 18% 88%;
     --sidebar-foreground: 0 0% 10%;
@@ -63,37 +62,40 @@
   }
 
   body {
-    @apply bg-background text-foreground font-mono;
-    font-family: 'Space Mono', monospace;
-    -webkit-font-smoothing: auto;
+    @apply bg-background text-foreground;
+    font-family: 'Archivo', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(circle at 10% 0%, hsl(265 85% 94% / .9), transparent 34rem),
+      radial-gradient(circle at 90% 15%, hsl(205 90% 94% / .75), transparent 30rem);
+    background-attachment: fixed;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Archivo', sans-serif;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: -0.025em;
   }
 }
 
 /* Ledger grid borders */
 .ledger-cell {
-  @apply border border-foreground px-3 py-2;
+  @apply border-b border-r border-slate-200 px-3 py-2.5 last:border-r-0;
 }
 
 .ledger-header {
-  @apply border border-foreground px-3 py-2 font-heading font-extrabold uppercase text-xs tracking-widest;
+  @apply border-b border-r border-slate-200 bg-slate-50 px-3 py-2.5 font-heading text-xs font-extrabold uppercase tracking-widest last:border-r-0;
   font-family: 'Archivo', sans-serif;
 }
 
 /* Punch-in lever */
 .lever-track {
-  @apply relative h-12 border border-foreground bg-secondary overflow-hidden select-none;
+  @apply relative h-12 overflow-hidden rounded-xl border border-border bg-secondary select-none;
   cursor: grab;
 }
 
 .lever-handle {
-  @apply absolute top-0 left-0 h-full w-16 bg-foreground flex items-center justify-center;
+  @apply absolute left-0 top-0 flex h-full w-16 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg;
   cursor: grab;
   touch-action: none;
 }
