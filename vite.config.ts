@@ -14,7 +14,10 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
     proxy: {
-      "/api": "http://localhost:3004",
+      "/teachers-payrolls/api": {
+        target: "http://localhost:3004",
+        rewrite: (requestPath) => requestPath.replace(/^\/teachers-payrolls/, ""),
+      },
     },
   },
   plugins: [react(), tailwindcss(), mode === "development" && componentTagger()].filter(Boolean),
