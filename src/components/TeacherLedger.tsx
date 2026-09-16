@@ -14,7 +14,7 @@ interface Props {
   onUpdateRecord: (teacherId: string, entries: HoursEntry[]) => void;
   onUpdateTeacher: (teacher: Teacher) => void;
   onDeleteTeacher: (id: string) => void;
-  onAddTeacher: (teacher: Omit<Teacher, "id">) => boolean | void | Promise<boolean | void>;
+  onAddTeacher: (teacher: Omit<Teacher, "id">, entries: HoursEntry[]) => boolean | void | Promise<boolean | void>;
 }
 
 const ITEMS_PER_PAGE = 15;
@@ -69,7 +69,7 @@ export function TeacherLedger({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
-          <AddTeacherDialog onAdd={onAddTeacher} />
+          <AddTeacherDialog activities={activities} onAdd={onAddTeacher} />
         </div>
       </div>
 

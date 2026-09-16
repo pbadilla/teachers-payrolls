@@ -84,14 +84,18 @@ const Index = () => {
     setTeachers(prev => prev.map(t => t.id === updated.id ? updated : t));
   };
 
-  const handleAdd = async (data: Omit<Teacher, "id">) => {
+  const handleAdd = async (data: Omit<Teacher, "id">, entries: HoursEntry[]) => {
     const teacher = { ...data, id: createId() };
     try {
       await api.addTeacher(teacher);
+      const hours = entries.reduce((sum, entry) => sum + entry.hours, 0);
+      await api.updateRecord({ teacherId: teacher.id, month: selectedMonth, hours, entries });
       setTeachers(prev => [...prev, teacher]);
+      setRecords(prev => [...prev, { teacherId: teacher.id, month: selectedMonth, hours, entries }]);
       return true;
     } catch (error) {
       console.error(error);
+      try { await api.deleteTeacher(teacher.id); } catch { /* Best-effort rollback. */ }
       toast.error("No s'ha pogut afegir el professor");
       return false;
     }

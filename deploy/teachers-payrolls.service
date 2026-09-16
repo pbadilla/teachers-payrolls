@@ -9,6 +9,7 @@ User=root
 WorkingDirectory=/var/www/pachibadilla.info/rg360/teachers-payrolls
 Environment=NODE_ENV=production
 Environment=PORT=3004
+EnvironmentFile=/var/www/pachibadilla.info/rg360/teachers-payrolls/server/.env
 ExecStart=/usr/bin/node server/index.mjs
 Restart=on-failure
 RestartSec=5

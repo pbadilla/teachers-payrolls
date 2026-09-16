@@ -2,8 +2,9 @@ import dotenv from "dotenv";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { MongoClient } from "mongodb";
+import { fileURLToPath } from "node:url";
 
-dotenv.config({ path: new URL(".env", import.meta.url) });
+dotenv.config({ path: fileURLToPath(new URL(".env", import.meta.url)) });
 
 const { MONGODB_URI, MONGODB_DB = "teachers_payrolls", PORT = "3004" } = process.env;
 
