@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: mode === "development" ? "/teachers-payrolls/" : "/",
+  base: "/teachers-payrolls/",
   server: {
     host: "::",
     port: 3003,

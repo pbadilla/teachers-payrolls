@@ -57,6 +57,38 @@ app.post("/api/seed", async (request, reply) => {
   return reply.code(201).send({ ok: true });
 });
 
+app.post("/api/import", async (request, reply) => {
+  const body = request.body ?? {};
+  const importedTeachers = Array.isArray(body.teachers) ? body.teachers : [];
+  const importedRecords = Array.isArray(body.records) ? body.records : [];
+  const importedActivities = Array.isArray(body.activities) ? body.activities : [];
+
+  if (!importedTeachers.length && !importedRecords.length && !importedActivities.length) {
+    return reply.code(400).send({ error: "The import does not contain any supported rows" });
+  }
+
+  const invalidTeacher = importedTeachers.find((teacher) => !teacher?.id || !teacher?.name || !["coded", "efectiu"].includes(teacher?.type) || !Number.isFinite(Number(teacher?.hourlyRate)));
+  const invalidActivity = importedActivities.find((activity) => !activity?.id || !activity?.name);
+  const invalidRecord = importedRecords.find((record) => !record?.teacherId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(record?.month ?? "") || !Number.isFinite(Number(record?.hours)));
+  if (invalidTeacher || invalidActivity || invalidRecord) {
+    return reply.code(400).send({ error: "The import contains invalid or incomplete rows" });
+  }
+
+  const operations = [];
+  if (importedTeachers.length) operations.push(teachers.bulkWrite(importedTeachers.map(({ _id, ...teacher }) => ({
+    replaceOne: { filter: { id: teacher.id }, replacement: { ...teacher, hourlyRate: Number(teacher.hourlyRate) }, upsert: true },
+  }))));
+  if (importedActivities.length) operations.push(activities.bulkWrite(importedActivities.map(({ _id, ...activity }) => ({
+    replaceOne: { filter: { id: activity.id }, replacement: activity, upsert: true },
+  }))));
+  if (importedRecords.length) operations.push(records.bulkWrite(importedRecords.map(({ _id, ...record }) => ({
+    replaceOne: { filter: { teacherId: record.teacherId, month: record.month }, replacement: { ...record, hours: Number(record.hours) }, upsert: true },
+  }))));
+  await Promise.all(operations);
+
+  return reply.code(201).send({ teachers: importedTeachers.length, records: importedRecords.length, activities: importedActivities.length });
+});
+
 app.post("/api/teachers", async (request, reply) => {
   const teacher = request.body;
   await teachers.insertOne(teacher);

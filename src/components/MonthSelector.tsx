@@ -7,38 +7,38 @@ interface Props {
 
 export function MonthSelector({ selectedMonth, onChange }: Props) {
   const [year, monthNum] = selectedMonth.split("-").map(Number);
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 21 }, (_, index) => currentYear - 10 + index);
 
-  const prev = () => {
-    const m = monthNum === 1 ? 12 : monthNum - 1;
-    const y = monthNum === 1 ? year - 1 : year;
-    onChange(`${y}-${String(m).padStart(2, "0")}`);
+  const changeMonth = (month: number) => {
+    onChange(`${year}-${String(month).padStart(2, "0")}`);
   };
 
-  const next = () => {
-    const m = monthNum === 12 ? 1 : monthNum + 1;
-    const y = monthNum === 12 ? year + 1 : year;
-    onChange(`${y}-${String(m).padStart(2, "0")}`);
+  const changeYear = (nextYear: number) => {
+    onChange(`${nextYear}-${String(monthNum).padStart(2, "0")}`);
   };
-
-  const label = `${MONTHS_CA[monthNum - 1]} ${year}`;
 
   return (
-    <div className="border border-foreground flex items-stretch">
-      <button
-        onClick={prev}
-        className="px-4 py-2 border-r border-foreground font-mono text-sm hover:bg-secondary transition-colors"
+    <div className="flex items-center gap-2">
+      <label className="sr-only" htmlFor="payroll-month">Mes</label>
+      <select
+        id="payroll-month"
+        value={monthNum}
+        onChange={(event) => changeMonth(Number(event.target.value))}
+        className="h-10 border border-slate-300 bg-white px-3 font-heading text-sm font-semibold uppercase tracking-wide outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/15"
       >
-        ◄
-      </button>
-      <div className="flex-1 px-6 py-2 text-center font-heading text-sm uppercase tracking-widest">
-        {label}
-      </div>
-      <button
-        onClick={next}
-        className="px-4 py-2 border-l border-foreground font-mono text-sm hover:bg-secondary transition-colors"
+        {MONTHS_CA.map((month, index) => <option key={month} value={index + 1}>{month}</option>)}
+      </select>
+      <label className="sr-only" htmlFor="payroll-year">Any</label>
+      <select
+        id="payroll-year"
+        value={year}
+        onChange={(event) => changeYear(Number(event.target.value))}
+        className="h-10 border border-slate-300 bg-white px-3 font-mono text-sm font-semibold outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/15"
       >
-        ►
-      </button>
+        {!years.includes(year) && <option value={year}>{year}</option>}
+        {years.map((optionYear) => <option key={optionYear} value={optionYear}>{optionYear}</option>)}
+      </select>
     </div>
   );
 }

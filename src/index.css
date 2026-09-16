@@ -1,7 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap');
 
 @import "tailwindcss";
-@import "@heroui/styles";
+@import "tw-animate-css";
+@import "@heroui/styles/base" layer(base);
+@import "@heroui/styles/base/scrollbar.css" layer(base);
+@import "@heroui/styles/components/button.css" layer(components);
+@import "@heroui/styles/components/card.css" layer(components);
+@import "@heroui/styles/themes/default" layer(theme);
+@import "@heroui/styles/utilities";
+@import "@heroui/styles/variants";
 @config "../tailwind.config.ts";
 
 @layer base {
@@ -43,7 +50,7 @@
     --input: 240 20% 89%;
     --ring: 262 83% 58%;
 
-    --radius: 16px;
+    --radius: 4px;
 
     --sidebar-background: 43 18% 88%;
     --sidebar-foreground: 0 0% 10%;
@@ -59,6 +66,7 @@
 @layer base {
   * {
     @apply border-border;
+    border-radius: 4px !important;
   }
 
   body {

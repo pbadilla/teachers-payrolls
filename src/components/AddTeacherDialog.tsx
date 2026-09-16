@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { Teacher } from "@/types/teacher";
 
 interface Props {
-  onAdd: (teacher: Omit<Teacher, "id">) => void;
+  onAdd: (teacher: Omit<Teacher, "id">) => boolean | void | Promise<boolean | void>;
 }
 
 export function AddTeacherDialog({ onAdd }: Props) {
@@ -11,11 +12,15 @@ export function AddTeacherDialog({ onAdd }: Props) {
   const [code, setCode] = useState("");
   const [type, setType] = useState<"coded" | "efectiu">("coded");
   const [rate, setRate] = useState(25);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    if (!name.trim()) return;
-    onAdd({ code, name: name.trim(), type, hourlyRate: rate });
-    setName(""); setCode(""); setRate(25);
+  const handleSubmit = async () => {
+    if (!name.trim() || submitting) return;
+    setSubmitting(true);
+    const added = await onAdd({ code, name: name.trim(), type, hourlyRate: rate });
+    setSubmitting(false);
+    if (added === false) return;
+    setName(""); setCode(""); setRate(25); setType("coded");
     setOpen(false);
   };
 
@@ -30,10 +35,10 @@ export function AddTeacherDialog({ onAdd }: Props) {
     );
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
-      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-white/80 bg-white text-slate-900 shadow-2xl shadow-slate-950/30" onClick={e => e.stopPropagation()}>
-        <div className="border-b border-slate-200 px-6 py-4 text-sm font-extrabold tracking-wide">NOU PROFESSOR</div>
+      <div role="dialog" aria-modal="true" aria-labelledby="add-teacher-title" className="w-full max-w-md overflow-hidden rounded-3xl border border-white/80 bg-white text-slate-900 shadow-2xl shadow-slate-950/30" onClick={e => e.stopPropagation()}>
+        <div id="add-teacher-title" className="border-b border-slate-200 px-6 py-4 text-sm font-extrabold tracking-wide">NOU PROFESSOR</div>
         <div className="space-y-5 p-6">
           <div className="space-y-2">
             <label className="block space-y-2 text-xs font-bold uppercase tracking-wider text-slate-600">Nom</label>
@@ -61,17 +66,18 @@ export function AddTeacherDialog({ onAdd }: Props) {
               className="block h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 tabular-nums" />
           </div>
           <div className="grid grid-cols-2 gap-3 pt-2">
-            <button onClick={() => setOpen(false)}
+            <button disabled={submitting} onClick={() => setOpen(false)}
               className="h-11 rounded-xl border border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-600 transition hover:bg-slate-100">
               CANCEL·LAR
             </button>
-            <button onClick={handleSubmit}
-              className="h-11 rounded-xl bg-violet-600 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-violet-500/20 transition hover:bg-violet-700">
-              REGISTRAR
+            <button disabled={!name.trim() || submitting} onClick={() => void handleSubmit()}
+              className="h-11 rounded-xl bg-violet-600 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-violet-500/20 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50">
+              {submitting ? "DESANT…" : "REGISTRAR"}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

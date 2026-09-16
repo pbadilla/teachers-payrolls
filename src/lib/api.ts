@@ -25,4 +25,9 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ hours: record.hours, entries: record.entries }),
     }),
+  importData: (data: { teachers?: Teacher[]; records?: MonthlyRecord[]; activities?: Activity[] }) =>
+    request<{ teachers: number; records: number; activities: number }>("/import", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };

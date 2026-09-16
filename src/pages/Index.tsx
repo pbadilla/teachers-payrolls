@@ -9,9 +9,8 @@ import { ActivityManager } from "@/components/ActivityManager";
 import { StatsPanel } from "@/components/StatsPanel";
 import { createId } from "@/lib/id";
 import { Button, Card } from "@heroui/react";
-import { BarChart3, BookOpenCheck, GraduationCap, History, Sparkles } from "lucide-react";
+import { ArrowLeftRight, BarChart3, BookOpenCheck, GraduationCap, History, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
-import { AddTeacherDialog } from "@/components/AddTeacherDialog";
 
 const now = new Date();
 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -90,9 +89,11 @@ const Index = () => {
     try {
       await api.addTeacher(teacher);
       setTeachers(prev => [...prev, teacher]);
+      return true;
     } catch (error) {
       console.error(error);
       toast.error("No s'ha pogut afegir el professor");
+      return false;
     }
   };
 
@@ -121,20 +122,19 @@ const Index = () => {
                 <p className="mt-1 text-sm text-muted-foreground">Gestió de nòmines, hores i activitats</p>
               </div>
             </div>
-            <nav className="flex flex-wrap gap-2" aria-label="Seccions principals">
+            <nav className="flex flex-wrap items-center gap-2" aria-label="Seccions principals">
               <Button variant={activeTab === "payroll" ? "primary" : "ghost"} onPress={() => setActiveTab("payroll")}><BookOpenCheck className="h-4 w-4" />Nòmines</Button>
               <Button variant={activeTab === "activities" ? "primary" : "ghost"} onPress={() => setActiveTab("activities")}><GraduationCap className="h-4 w-4" />Activitats / Escoles</Button>
               <Button variant={activeTab === "stats" ? "primary" : "ghost"} onPress={() => setActiveTab("stats")}><BarChart3 className="h-4 w-4" />Estadístiques</Button>
+              <Link to="/history" className="inline-flex h-10 items-center gap-2 px-4 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">
+                <History className="h-4 w-4" />Historial
+              </Link>
+              <Link to="/import-export" className="inline-flex h-10 items-center gap-2 px-4 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">
+                <ArrowLeftRight className="h-4 w-4" />Importar / Exportar
+              </Link>
             </nav>
           </Card.Content>
         </Card>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm backdrop-blur-xl">
-          <Link to="/history" className="inline-flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">
-            <History className="h-4 w-4" />Historial
-          </Link>
-          <AddTeacherDialog onAdd={handleAdd} />
-        </div>
 
         {activeTab === "payroll" ? (
         <div className="flex flex-col gap-5 lg:flex-row">
@@ -150,6 +150,7 @@ const Index = () => {
               onUpdateRecord={handleUpdateRecord}
               onUpdateTeacher={handleUpdateTeacher}
               onDeleteTeacher={handleDelete}
+              onAddTeacher={handleAdd}
             />
           </div>
 

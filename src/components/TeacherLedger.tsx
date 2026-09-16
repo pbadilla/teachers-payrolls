@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Activity, HoursEntry, Teacher, MonthlyRecord, recordHours, recordPayment } from "@/types/teacher";
 import { EditHoursDialog } from "./EditHoursDialog";
 import { MonthSelector } from "./MonthSelector";
+import { AddTeacherDialog } from "./AddTeacherDialog";
 
 interface Props {
   teachers: Teacher[];
@@ -13,13 +14,14 @@ interface Props {
   onUpdateRecord: (teacherId: string, entries: HoursEntry[]) => void;
   onUpdateTeacher: (teacher: Teacher) => void;
   onDeleteTeacher: (id: string) => void;
+  onAddTeacher: (teacher: Omit<Teacher, "id">) => boolean | void | Promise<boolean | void>;
 }
 
 const ITEMS_PER_PAGE = 15;
 
 export function TeacherLedger({
   teachers, records, activities, selectedMonth, monthLabel,
-  onMonthChange, onUpdateRecord, onUpdateTeacher, onDeleteTeacher
+  onMonthChange, onUpdateRecord, onUpdateTeacher, onDeleteTeacher, onAddTeacher
 }: Props) {
   const [page, setPage] = useState(1);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
@@ -65,7 +67,10 @@ export function TeacherLedger({
           <h1 className="font-heading text-2xl tracking-tight">NÒMINES PROFES</h1>
           <span className="text-xs font-mono text-muted-foreground">{monthLabel}</span>
         </div>
-        <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
+        <div className="flex flex-wrap items-center gap-2">
+          <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
+          <AddTeacherDialog onAdd={onAddTeacher} />
+        </div>
       </div>
 
       {/* Table */}
