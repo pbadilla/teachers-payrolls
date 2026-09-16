@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, ActivityKind, HoursEntry, Teacher, MonthlyRecord, MONTHS_CA, recordHours } from "@/types/teacher";
+import { Activity, ActivityKind, HoursEntry, Teacher, MonthlyRecord, MONTHS_CA, PayrollMonthState } from "@/types/teacher";
 import { initialTeachers, initialRecords } from "@/data/teachers";
 import { TeacherLedger } from "@/components/TeacherLedger";
 import { BalancePanel } from "@/components/BalancePanel";
@@ -20,10 +20,10 @@ const Index = () => {
   const [records, setRecords] = useState<MonthlyRecord[]>(initialRecords);
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [payrollMonths, setPayrollMonths] = useState<PayrollMonthState[]>([]);
   const [activeTab, setActiveTab] = useState<"payroll" | "activities" | "stats">("payroll");
 
-  useEffect(() => {
-    const load = async () => {
+  const loadData = async () => {
       try {
         let data = await api.getData();
         if (data.teachers.length === 0) {
@@ -33,22 +33,20 @@ const Index = () => {
         setTeachers(data.teachers);
         setRecords(data.records);
         setActivities(data.activities ?? []);
+        setPayrollMonths(data.payrollMonths ?? []);
       } catch (error) {
         console.error(error);
         toast.error("No s'ha pogut connectar amb la base de dades");
       }
-    };
-    void load();
+  };
+
+  useEffect(() => {
+    void loadData();
   }, []);
 
   const [year, monthNum] = selectedMonth.split("-").map(Number);
   const monthLabel = `${MONTHS_CA[monthNum - 1]} ${year}`;
-  const teachersWithHours = teachers.filter((teacher) => {
-    const record = records.find(
-      (item) => item.teacherId === teacher.id && item.month === selectedMonth,
-    );
-    return recordHours(record) > 0;
-  });
+  const payrollState = payrollMonths.find((item) => item.month === selectedMonth) ?? { month: selectedMonth, status: "pending" as const, locked: false };
 
   const handleUpdateRecord = async (teacherId: string, entries: HoursEntry[]) => {
     const hours = entries.reduce((sum, entry) => sum + entry.hours, 0);
@@ -70,8 +68,28 @@ const Index = () => {
     });
   };
 
-  const handleAddActivity = async (name: string, kind: ActivityKind) => { const activity = { id: createId(), name, kind }; try { await api.addActivity(activity); setActivities(p => [...p, activity]); } catch { toast.error(`No s'ha pogut afegir ${kind === "school" ? "l'escola" : "l'activitat"}`); } };
-  const handleDeleteActivity = async (id: string) => { if (teachers.some(t => t.rates?.some(r => r.activityId === id))) { toast.error("Aquesta activitat està assignada a un professor"); return; } try { await api.deleteActivity(id); setActivities(p => p.filter(a => a.id !== id)); } catch { toast.error("No s'ha pogut eliminar l'activitat"); } };
+  const handleAddActivity = async (name: string, kind: ActivityKind, schoolId?: string) => { const activity = { id: createId(), name, kind, ...(schoolId ? { schoolId } : {}) }; try { await api.addActivity(activity); setActivities(p => [...p, activity]); } catch { toast.error(`No s'ha pogut afegir ${kind === "school" ? "l'escola" : "l'activitat"}`); } };
+  const handleDeleteActivity = async (id: string) => { if (teachers.some(t => t.rates?.some(r => r.activityId === id))) { toast.error("Aquesta activitat està assignada a un professor"); return; } try { await api.deleteActivity(id); setActivities(p => p.filter(a => a.id !== id)); } catch (error) { toast.error(error instanceof Error ? error.message : "No s'ha pogut eliminar"); } };
+
+  const handlePayrollState = async (next: PayrollMonthState) => {
+    try {
+      const saved = await api.updatePayrollMonth(next);
+      setPayrollMonths((current) => [...current.filter((item) => item.month !== saved.month), saved]);
+      toast.success(saved.locked ? "Nòmina bloquejada" : "Estat de la nòmina actualitzat");
+    } catch { toast.error("No s'ha pogut actualitzar l'estat de la nòmina"); }
+  };
+
+  const handleCopyMonth = async (sourceMonth: string, targetMonth: string) => {
+    try {
+      const result = await api.copyPayrollMonth(sourceMonth, targetMonth);
+      await loadData();
+      toast.success(`${result.copied} registres copiats`);
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No s'ha pogut copiar la nòmina");
+      return false;
+    }
+  };
 
   const handleUpdateTeacher = async (updated: Teacher) => {
     try {
@@ -145,7 +163,7 @@ const Index = () => {
           {/* Main Ledger */}
           <div className="min-w-0 flex-1 shadow-lg shadow-violet-950/5">
             <TeacherLedger
-              teachers={teachersWithHours}
+              teachers={teachers}
               records={records}
               activities={activities}
               selectedMonth={selectedMonth}
@@ -155,6 +173,9 @@ const Index = () => {
               onUpdateTeacher={handleUpdateTeacher}
               onDeleteTeacher={handleDelete}
               onAddTeacher={handleAdd}
+              payrollState={payrollState}
+              onPayrollStateChange={handlePayrollState}
+              onCopyMonth={handleCopyMonth}
             />
           </div>
 

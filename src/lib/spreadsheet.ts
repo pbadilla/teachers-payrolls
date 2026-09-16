@@ -16,7 +16,7 @@ const serialize = (dataset: Dataset, data: PayrollData) => {
     id: teacher.id, code: teacher.code, name: teacher.name, type: teacher.type,
     hourlyRate: teacher.hourlyRate, rates: JSON.stringify(teacher.rates ?? []),
   }));
-  if (dataset === "activities") return data.activities.map(({ id, name, kind }) => ({ id, name, kind: kind ?? "activity" }));
+  if (dataset === "activities") return data.activities.map(({ id, name, kind, schoolId }) => ({ id, name, kind: kind ?? "activity", schoolId: schoolId ?? "" }));
   return data.records.map((record) => ({
     teacherId: record.teacherId, month: record.month, hours: record.hours,
     entries: JSON.stringify(record.entries ?? []),
@@ -33,7 +33,7 @@ const parseRows = (dataset: Dataset, rows: Record<string, unknown>[]) => {
     return teacher as Teacher;
   });
   if (dataset === "activities") return rows.map((row, index) => {
-    const activity = { id: String(row.id ?? "").trim(), name: String(row.name ?? "").trim(), kind: String(row.kind ?? "activity").trim() || "activity" };
+    const activity = { id: String(row.id ?? "").trim(), name: String(row.name ?? "").trim(), kind: String(row.kind ?? "activity").trim() || "activity", schoolId: String(row.schoolId ?? "").trim() || undefined };
     if (!activity.id || !activity.name || !["school", "activity"].includes(activity.kind)) throw new Error(`Invalid activity row ${index + 2}`);
     return activity;
   });
@@ -59,7 +59,7 @@ export const exportExcel = async (data: PayrollData) => {
   const workbook = XLSX.utils.book_new();
   (["teachers", "activities", "records"] as Dataset[]).forEach((dataset) => {
     const rows = serialize(dataset, data);
-    const headers = Object.keys(rows[0] ?? (dataset === "teachers" ? { id: "", code: "", name: "", type: "", hourlyRate: "", rates: "" } : dataset === "activities" ? { id: "", name: "", kind: "" } : { teacherId: "", month: "", hours: "", entries: "" }));
+    const headers = Object.keys(rows[0] ?? (dataset === "teachers" ? { id: "", code: "", name: "", type: "", hourlyRate: "", rates: "" } : dataset === "activities" ? { id: "", name: "", kind: "", schoolId: "" } : { teacherId: "", month: "", hours: "", entries: "" }));
     const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
     worksheet["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headers.length - 1)}1` };
     worksheet["!cols"] = headers.map((header) => ({ wch: Math.max(14, header.length + 4) }));

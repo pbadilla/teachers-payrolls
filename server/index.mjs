@@ -23,11 +23,13 @@ const db = client.db(MONGODB_DB);
 const teachers = db.collection("teachers");
 const records = db.collection("monthlyRecords");
 const activities = db.collection("activities");
+const payrollMonths = db.collection("payrollMonths");
 
 await Promise.all([
   teachers.createIndex({ id: 1 }, { unique: true }),
   records.createIndex({ teacherId: 1, month: 1 }, { unique: true }),
   activities.createIndex({ id: 1 }, { unique: true }),
+  payrollMonths.createIndex({ month: 1 }, { unique: true }),
 ]);
 
 const withoutMongoId = { projection: { _id: 0 } };
@@ -38,10 +40,57 @@ app.get("/api/data", async () => ({
   teachers: await teachers.find({}, withoutMongoId).sort({ name: 1 }).toArray(),
   records: await records.find({}, withoutMongoId).toArray(),
   activities: await activities.find({}, withoutMongoId).sort({ name: 1 }).toArray(),
+  payrollMonths: await payrollMonths.find({}, withoutMongoId).toArray(),
 }));
 
 app.post("/api/activities", async (request, reply) => { await activities.insertOne(request.body); return reply.code(201).send(request.body); });
-app.delete("/api/activities/:id", async (request, reply) => { await activities.deleteOne({ id: request.params.id }); return reply.code(204).send(); });
+app.delete("/api/activities/:id", async (request, reply) => {
+  const { id } = request.params;
+  const activity = await activities.findOne({ id }, withoutMongoId);
+  if (!activity) return reply.code(404).send({ error: "Activity or school not found" });
+  if (activity.kind === "school" && await activities.findOne({ schoolId: id })) {
+    return reply.code(409).send({ error: "This school still has activities" });
+  }
+  if (await teachers.findOne({ "rates.activityId": id }) || await records.findOne({ "entries.activityId": id })) {
+    return reply.code(409).send({ error: "This activity is used by a teacher or payroll" });
+  }
+  await activities.deleteOne({ id });
+  return reply.code(204).send();
+});
+
+app.put("/api/payroll-months/:month", async (request, reply) => {
+  const { month } = request.params;
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) return reply.code(400).send({ error: "Invalid month" });
+  const status = request.body?.status === "paid" ? "paid" : "pending";
+  const state = { month, status, locked: Boolean(request.body?.locked) };
+  await payrollMonths.replaceOne({ month }, state, { upsert: true });
+  return state;
+});
+
+app.post("/api/payroll-months/copy", async (request, reply) => {
+  const { sourceMonth, targetMonth, overwrite = false } = request.body ?? {};
+  const validMonth = (value) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value ?? "");
+  if (!validMonth(sourceMonth) || !validMonth(targetMonth) || sourceMonth === targetMonth) {
+    return reply.code(400).send({ error: "Source and target months must be different valid months" });
+  }
+  if ((await payrollMonths.findOne({ month: targetMonth }))?.locked) {
+    return reply.code(423).send({ error: "The target payroll is locked" });
+  }
+  const source = await records.find({ month: sourceMonth }, withoutMongoId).toArray();
+  if (!source.length) return reply.code(404).send({ error: "The source payroll has no records" });
+  if (!overwrite && await records.findOne({ month: targetMonth })) {
+    return reply.code(409).send({ error: "The target payroll already contains records" });
+  }
+  if (overwrite) await records.deleteMany({ month: targetMonth });
+  const copies = source.map(({ month, ...record }) => ({ ...record, month: targetMonth }));
+  await records.insertMany(copies);
+  await payrollMonths.updateOne(
+    { month: targetMonth },
+    { $setOnInsert: { month: targetMonth, status: "pending", locked: false } },
+    { upsert: true },
+  );
+  return reply.code(201).send({ copied: copies.length });
+});
 
 app.post("/api/seed", async (request, reply) => {
   const body = request.body ?? {};
@@ -113,6 +162,11 @@ app.delete("/api/teachers/:id", async (request, reply) => {
 
 app.put("/api/records/:teacherId/:month", async (request) => {
   const { teacherId, month } = request.params;
+  if ((await payrollMonths.findOne({ month }))?.locked) {
+    const error = new Error("This payroll is locked");
+    error.statusCode = 423;
+    throw error;
+  }
   const entries = Array.isArray(request.body?.entries) ? request.body.entries : undefined;
   const record = { teacherId, month, hours: entries ? entries.reduce((s, e) => s + Number(e.hours), 0) : Number(request.body?.hours ?? 0), ...(entries ? { entries } : {}) };
   await records.replaceOne({ teacherId, month }, record, { upsert: true });

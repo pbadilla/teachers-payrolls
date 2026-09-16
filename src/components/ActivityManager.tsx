@@ -6,7 +6,7 @@ const ITEMS_PER_PAGE = 10;
 
 type ActivityManagerProps = {
   activities: Activity[];
-  onAdd: (name: string, kind: ActivityKind) => void;
+  onAdd: (name: string, kind: ActivityKind, schoolId?: string) => void;
   onDelete: (id: string) => void;
 };
 
@@ -17,12 +17,15 @@ type ManagerPanelProps = {
   items: Activity[];
   onAdd: (name: string) => void;
   onDelete: (id: string) => void;
+  schools?: Activity[];
+  onAddWithSchool?: (name: string, schoolId?: string) => void;
 };
 
-function ManagerPanel({ title, singular, placeholder, items, onAdd, onDelete }: ManagerPanelProps) {
+function ManagerPanel({ title, singular, placeholder, items, onAdd, onDelete, schools, onAddWithSchool }: ManagerPanelProps) {
   const [name, setName] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [schoolId, setSchoolId] = useState("");
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("ca");
@@ -44,7 +47,8 @@ function ManagerPanel({ title, singular, placeholder, items, onAdd, onDelete }: 
   const addItem = () => {
     const trimmedName = name.trim();
     if (!trimmedName) return;
-    onAdd(trimmedName);
+    if (onAddWithSchool) onAddWithSchool(trimmedName, schoolId || undefined);
+    else onAdd(trimmedName);
     setName("");
   };
 
@@ -56,6 +60,17 @@ function ManagerPanel({ title, singular, placeholder, items, onAdd, onDelete }: 
       </div>
 
       <div className="space-y-4 p-4">
+        {schools && (
+          <select
+            value={schoolId}
+            onChange={(event) => setSchoolId(event.target.value)}
+            aria-label="Escola de l'activitat"
+            className="h-11 w-full border border-border bg-background px-3 text-sm outline-none focus:border-foreground"
+          >
+            <option value="">Sense escola assignada</option>
+            {schools.map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}
+          </select>
+        )}
         <div className="flex border border-foreground">
           <input
             value={name}
@@ -119,11 +134,16 @@ function ManagerPanel({ title, singular, placeholder, items, onAdd, onDelete }: 
               <div key={item.id} className="flex min-h-12 items-center justify-between gap-3 px-3 py-2 text-sm">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="w-6 shrink-0 text-right font-mono text-xs text-muted-foreground">{firstIndex + index + 1}</span>
-                  <span className="truncate font-mono">{item.name}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate font-mono">{item.name}</span>
+                    {schools && <span className="block truncate text-[10px] text-muted-foreground">{schools.find((school) => school.id === item.schoolId)?.name ?? "Sense escola"}</span>}
+                  </span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => onDelete(item.id)}
+                  onClick={() => {
+                    if (window.confirm(`Eliminar ${item.name}? Aquesta acció no es pot desfer.`)) onDelete(item.id);
+                  }}
                   aria-label={`Eliminar ${item.name}`}
                   className="flex h-8 w-8 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground"
                 >
@@ -179,7 +199,9 @@ export function ActivityManager({ activities, onAdd, onDelete }: ActivityManager
         singular="activitat"
         placeholder="Nova activitat"
         items={activityItems}
-        onAdd={(name) => onAdd(name, "activity")}
+        onAdd={() => undefined}
+        schools={schools}
+        onAddWithSchool={(name, schoolId) => onAdd(name, "activity", schoolId)}
         onDelete={onDelete}
       />
     </div>

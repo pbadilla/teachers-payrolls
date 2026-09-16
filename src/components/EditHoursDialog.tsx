@@ -1,21 +1,24 @@
 import { useState } from "react";
 import { Activity, HoursEntry, MonthlyRecord, Teacher, TeacherRate } from "@/types/teacher";
+import { useDialogAccessibility } from "@/hooks/use-dialog-accessibility";
 
 interface Props { teacher: Teacher; activities: Activity[]; currentRecord?: MonthlyRecord; onSave: (teacher: Teacher, entries: HoursEntry[]) => void; onClose: () => void; }
 
 export function EditHoursDialog({ teacher, activities, currentRecord, onSave, onClose }: Props) {
+  const dialogRef = useDialogAccessibility(true, onClose);
   const [name, setName] = useState(teacher.name);
   const [code, setCode] = useState(teacher.code);
   const [type, setType] = useState(teacher.type);
   const [rates, setRates] = useState<TeacherRate[]>(teacher.rates ?? []);
   const [entries, setEntries] = useState<HoursEntry[]>(currentRecord?.entries ?? []);
-  const available = activities.filter(a => !rates.some(r => r.activityId === a.id));
+  const billableActivities = activities.filter((activity) => activity.kind !== "school");
+  const available = billableActivities.filter(a => !rates.some(r => r.activityId === a.id));
   const total = entries.reduce((s, e) => s + e.hours * e.hourlyRate, 0);
   const updateRate = (activityId: string, hourlyRate: number) => { setRates(p => p.map(r => r.activityId === activityId ? { ...r, hourlyRate } : r)); setEntries(p => p.map(e => e.activityId === activityId ? { ...e, hourlyRate } : e)); };
   const updateHours = (activityId: string, hours: number, hourlyRate: number) => setEntries(p => p.some(e => e.activityId === activityId) ? p.map(e => e.activityId === activityId ? { ...e, hours, hourlyRate } : e) : [...p, { activityId, hours, hourlyRate }]);
 
-  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={onClose}><div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-white/80 bg-white text-slate-900 shadow-2xl shadow-slate-950/30" onClick={e => e.stopPropagation()}>
-    <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur"><span className="font-heading text-sm font-extrabold tracking-wide">EDITAR — {teacher.name.toUpperCase()}</span><button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Tancar">✕</button></div>
+  return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={onClose}><div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="edit-teacher-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-white/80 bg-white text-slate-900 shadow-2xl shadow-slate-950/30" onClick={e => e.stopPropagation()}>
+    <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-6 py-4 backdrop-blur"><span id="edit-teacher-title" className="font-heading text-sm font-extrabold tracking-wide">EDITAR — {teacher.name.toUpperCase()}</span><button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" aria-label="Tancar">✕</button></div>
     <div className="space-y-5 p-6">
       <label className="block space-y-2 text-xs font-bold uppercase tracking-wider text-slate-600">NOM<input value={name} onChange={e => setName(e.target.value)} className="block h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10" /></label>
       <label className="block space-y-2 text-xs font-bold uppercase tracking-wider text-slate-600">IBAN<input value={code} onChange={e => setCode(e.target.value)} className="block h-11 w-full rounded-xl border border-slate-200 bg-white px-3 font-mono text-sm text-slate-900 outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10" /></label>

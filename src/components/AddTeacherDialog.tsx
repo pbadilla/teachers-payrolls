@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { Activity, HoursEntry, Teacher, TeacherRate } from "@/types/teacher";
+import { useDialogAccessibility } from "@/hooks/use-dialog-accessibility";
 
 interface Props {
   activities: Activity[];
   onAdd: (teacher: Omit<Teacher, "id">, entries: HoursEntry[]) => boolean | void | Promise<boolean | void>;
+  disabled?: boolean;
 }
 
-export function AddTeacherDialog({ activities, onAdd }: Props) {
+export function AddTeacherDialog({ activities, onAdd, disabled = false }: Props) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
@@ -16,7 +18,9 @@ export function AddTeacherDialog({ activities, onAdd }: Props) {
   const [rates, setRates] = useState<TeacherRate[]>([]);
   const [hours, setHours] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
-  const availableActivities = activities.filter((activity) => !rates.some((item) => item.activityId === activity.id));
+  const dialogRef = useDialogAccessibility(open, () => setOpen(false));
+  const billableActivities = activities.filter((activity) => activity.kind !== "school");
+  const availableActivities = billableActivities.filter((activity) => !rates.some((item) => item.activityId === activity.id));
   const totalHours = rates.reduce((sum, item) => sum + (hours[item.activityId] ?? 0), 0);
   const totalAmount = rates.reduce((sum, item) => sum + (hours[item.activityId] ?? 0) * item.hourlyRate, 0);
   const totalHoursLabel = totalHours.toLocaleString("ca-ES", { maximumFractionDigits: 2 });
@@ -45,8 +49,9 @@ export function AddTeacherDialog({ activities, onAdd }: Props) {
   if (!open) {
     return (
       <button
+        disabled={disabled}
         onClick={() => setOpen(true)}
-        className="rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-violet-500/20 transition hover:bg-violet-700"
+        className="rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-violet-500/20 transition hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-40"
       >
         + AFEGIR PROFE
       </button>
@@ -55,8 +60,8 @@ export function AddTeacherDialog({ activities, onAdd }: Props) {
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" onClick={() => setOpen(false)}>
-      <div role="dialog" aria-modal="true" aria-labelledby="add-teacher-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-white/80 bg-white text-slate-900 shadow-2xl shadow-slate-950/30" onClick={e => e.stopPropagation()}>
-        <div id="add-teacher-title" className="border-b border-slate-200 px-6 py-4 text-sm font-extrabold tracking-wide">NOU PROFESSOR</div>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="add-teacher-title" className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-white/80 bg-white text-slate-900 shadow-2xl shadow-slate-950/30" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4"><div id="add-teacher-title" className="text-sm font-extrabold tracking-wide">NOU PROFESSOR</div><button type="button" onClick={() => setOpen(false)} aria-label="Tancar" className="h-8 w-8 text-slate-500 hover:bg-slate-100">✕</button></div>
         <div className="space-y-5 p-6">
           <div className="space-y-2">
             <label className="block space-y-2 text-xs font-bold uppercase tracking-wider text-slate-600">Nom</label>
@@ -107,8 +112,8 @@ export function AddTeacherDialog({ activities, onAdd }: Props) {
               <option value="">+ Assignar activitat / escola</option>
               {availableActivities.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}
             </select>}
-            {activities.length === 0 && <p className="border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">Crea primer una activitat o escola des de la secció “Activitats / Escoles”.</p>}
-            {activities.length > 0 && rates.length === 0 && <p className="text-xs text-slate-500">Assigna com a mínim una activitat per registrar el professor.</p>}
+            {billableActivities.length === 0 && <p className="border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800">Crea primer una activitat des de la secció “Activitats / Escoles”.</p>}
+            {billableActivities.length > 0 && rates.length === 0 && <p className="text-xs text-slate-500">Assigna com a mínim una activitat per registrar el professor.</p>}
           </div>
           <div className="flex items-center justify-between bg-slate-100 p-4">
             <div><div className="text-xs font-bold uppercase tracking-wider text-slate-500">Total</div><div className="mt-1 font-mono text-xs text-slate-500">{totalHoursLabel} hores</div></div>

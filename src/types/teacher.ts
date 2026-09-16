@@ -8,7 +8,7 @@ export interface Teacher {
 }
 
 export type ActivityKind = "school" | "activity";
-export interface Activity { id: string; name: string; kind?: ActivityKind; }
+export interface Activity { id: string; name: string; kind?: ActivityKind; schoolId?: string; }
 export interface TeacherRate { activityId: string; hourlyRate: number; }
 export interface HoursEntry { activityId: string; hours: number; hourlyRate: number; }
 
@@ -17,6 +17,12 @@ export interface MonthlyRecord {
   month: string; // "2026-01", "2026-02", etc.
   hours: number;
   entries?: HoursEntry[];
+}
+
+export interface PayrollMonthState {
+  month: string;
+  status: "pending" | "paid";
+  locked: boolean;
 }
 
 export const recordHours = (record?: MonthlyRecord) => record?.entries?.reduce((sum, e) => sum + e.hours, 0) ?? record?.hours ?? 0;
