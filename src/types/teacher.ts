@@ -7,7 +7,8 @@ export interface Teacher {
   rates?: TeacherRate[];
 }
 
-export interface Activity { id: string; name: string; }
+export type ActivityKind = "school" | "activity";
+export interface Activity { id: string; name: string; kind?: ActivityKind; }
 export interface TeacherRate { activityId: string; hourlyRate: number; }
 export interface HoursEntry { activityId: string; hours: number; hourlyRate: number; }
 

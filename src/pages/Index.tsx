@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Activity, HoursEntry, Teacher, MonthlyRecord, MONTHS_CA, recordHours } from "@/types/teacher";
+import { Activity, ActivityKind, HoursEntry, Teacher, MonthlyRecord, MONTHS_CA, recordHours } from "@/types/teacher";
 import { initialTeachers, initialRecords } from "@/data/teachers";
 import { TeacherLedger } from "@/components/TeacherLedger";
 import { BalancePanel } from "@/components/BalancePanel";
@@ -70,7 +70,7 @@ const Index = () => {
     });
   };
 
-  const handleAddActivity = async (name: string) => { const activity = { id: createId(), name }; try { await api.addActivity(activity); setActivities(p => [...p, activity]); } catch { toast.error("No s'ha pogut afegir l'activitat"); } };
+  const handleAddActivity = async (name: string, kind: ActivityKind) => { const activity = { id: createId(), name, kind }; try { await api.addActivity(activity); setActivities(p => [...p, activity]); } catch { toast.error(`No s'ha pogut afegir ${kind === "school" ? "l'escola" : "l'activitat"}`); } };
   const handleDeleteActivity = async (id: string) => { if (teachers.some(t => t.rates?.some(r => r.activityId === id))) { toast.error("Aquesta activitat està assignada a un professor"); return; } try { await api.deleteActivity(id); setActivities(p => p.filter(a => a.id !== id)); } catch { toast.error("No s'ha pogut eliminar l'activitat"); } };
 
   const handleUpdateTeacher = async (updated: Teacher) => {
@@ -169,7 +169,7 @@ const Index = () => {
           </div>
         </div>
         ) : activeTab === "activities" ? (
-          <div className="max-w-2xl rounded-xl border border-slate-200 bg-white/90 p-5 shadow-lg shadow-violet-950/5 backdrop-blur-xl">
+          <div className="rounded-xl border border-slate-200 bg-white/90 p-5 shadow-lg shadow-violet-950/5 backdrop-blur-xl">
             <ActivityManager activities={activities} onAdd={handleAddActivity} onDelete={handleDeleteActivity} />
           </div>
         ) : (

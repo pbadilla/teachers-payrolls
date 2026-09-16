@@ -31,10 +31,10 @@ export default function History() {
   }), [records, teachers]);
 
   return <div className="min-h-screen p-4 lg:p-8"><div className="mx-auto max-w-6xl space-y-6">
-    <Card className="rounded-xl border border-slate-200 bg-white/90 shadow-lg shadow-violet-950/5 backdrop-blur-xl"><Card.Content className="flex items-center gap-4 p-5">
-      <Link to="/" className="flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition hover:bg-violet-50 hover:text-violet-700" aria-label="Tornar"><ArrowLeft className="h-5 w-5" /></Link>
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-700"><HistoryIcon className="h-5 w-5" /></div>
-      <div><h1 className="text-xl font-extrabold normal-case tracking-tight">Historial de nòmines</h1><p className="text-sm text-muted-foreground">Resum mensual d'hores i imports</p></div>
+    <Card className="rounded-xl border border-slate-200 bg-white/90 shadow-lg shadow-violet-950/5 backdrop-blur-xl"><Card.Content className="flex flex-row items-center gap-3 p-5 sm:gap-4">
+      <Link to="/" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-violet-50 hover:text-violet-700" aria-label="Tornar a nòmines"><ArrowLeft className="h-5 w-5" /></Link>
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700"><HistoryIcon className="h-5 w-5" /></div>
+      <div className="min-w-0"><h1 className="text-lg font-extrabold normal-case tracking-tight sm:text-xl">Historial de nòmines</h1><p className="truncate text-sm text-muted-foreground">Resum mensual d'hores i imports</p></div>
     </Card.Content></Card>
 
     {loading ? <div className="rounded-xl border border-slate-200 bg-white p-12 text-center text-muted-foreground">Carregant historial…</div> : error ? <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-red-700">{error}</div> : months.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-12 text-center"><CalendarDays className="mx-auto mb-3 h-8 w-8 text-slate-400" /><p className="font-semibold">Encara no hi ha dades històriques.</p></div> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{months.map((item) => <Card key={item.month} className="rounded-xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-lg"><Card.Content className="space-y-5 p-5">
