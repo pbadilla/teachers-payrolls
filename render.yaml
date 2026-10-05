@@ -1,0 +1,23 @@
+# Render Blueprint: API only (the frontend is deployed on Cloudflare).
+services:
+  - type: web
+    name: rg360-nominas-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    buildFilter:
+      paths:
+        - server/**
+        - package.json
+        - bun.lock
+        - Dockerfile
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        sync: false
+      - key: CLIENT_ORIGIN
+        value: https://nominas.rollergrind360.com

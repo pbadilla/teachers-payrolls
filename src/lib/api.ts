@@ -1,6 +1,7 @@
 import type { Activity, MonthlyRecord, PayrollMonthState, Teacher } from "@/types/teacher";
 
-const API_BASE = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
+// VITE_API_URL points to the standalone API (e.g. https://nominas-api.rollergrind360.com/api).
+const API_BASE = import.meta.env.VITE_API_URL ?? `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
 
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
   const headers = new Headers(options?.headers);

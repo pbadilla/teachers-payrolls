@@ -1,7 +1,6 @@
 import dotenv from "dotenv";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import fastifyStatic from "@fastify/static";
 import { MongoClient } from "mongodb";
 import { fileURLToPath } from "node:url";
 
@@ -173,13 +172,6 @@ app.put("/api/records/:teacherId/:month", async (request) => {
   await records.replaceOne({ teacherId, month }, record, { upsert: true });
   return record;
 });
-
-// In the Docker image the API also serves the built frontend (SPA fallback to index.html).
-if (process.env.SERVE_STATIC === "true") {
-  await app.register(fastifyStatic, { root: fileURLToPath(new URL("../dist", import.meta.url)) });
-  app.setNotFoundHandler((request, reply) =>
-    request.url.startsWith("/api/") ? reply.code(404).send({ error: "Not found" }) : reply.sendFile("index.html"));
-}
 
 app.addHook("onClose", async () => client.close());
 

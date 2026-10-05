@@ -1,0 +1,9 @@
+// Cloudflare Workers (static assets only), deployed by Workers Builds from GitHub.
+{
+  "name": "rg360-nominas",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

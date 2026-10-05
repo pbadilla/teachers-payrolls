@@ -18,7 +18,6 @@
   "dependencies": {
     "@e965/xlsx": "^0.20.3",
     "@fastify/cors": "^11.1.0",
-    "@fastify/static": "^10.1.5",
     "@heroui/react": "^3.2.4",
     "@heroui/styles": "^3.2.4",
     "@hookform/resolvers": "^3.10.0",
