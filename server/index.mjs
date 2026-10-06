@@ -175,11 +175,7 @@ app.put("/api/records/:teacherId/:month", async (request) => {
 
 app.addHook("onClose", async () => client.close());
 
-if (!process.env.VERCEL) {
-  const shutdown = async () => app.close();
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
-  await app.listen({ port: Number(PORT), host: "0.0.0.0" });
-}
-
-export default app;
+const shutdown = async () => app.close();
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+await app.listen({ port: Number(PORT), host: "0.0.0.0" });
