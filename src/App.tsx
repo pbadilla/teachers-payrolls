@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import History from "./pages/History.tsx";
 import ImportExport from "./pages/ImportExport.tsx";
+import { SuiteHeader } from "./components/layout/SuiteHeader";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter basename={import.meta.env.BASE_URL}>
+        <SuiteHeader />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/history" element={<History />} />

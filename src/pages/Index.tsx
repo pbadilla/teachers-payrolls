@@ -9,8 +9,8 @@ import { ActivityManager } from "@/components/ActivityManager";
 import { StatsPanel } from "@/components/StatsPanel";
 import { createId } from "@/lib/id";
 import { Button, Card } from "@heroui/react";
-import { ArrowLeftRight, BarChart3, BookOpenCheck, GraduationCap, History, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+
+import { useSearchParams } from "react-router-dom";
 
 const now = new Date();
 const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -21,7 +21,11 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(currentMonthKey);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [payrollMonths, setPayrollMonths] = useState<PayrollMonthState[]>([]);
-  const [activeTab, setActiveTab] = useState<"payroll" | "activities" | "stats">("payroll");
+  // The active tab lives in the URL (?tab=…) so the shared header can link to it.
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const activeTab: "payroll" | "activities" | "stats" =
+    requestedTab === "activities" || requestedTab === "stats" ? requestedTab : "payroll";
 
   const loadData = async () => {
       try {
@@ -133,30 +137,6 @@ const Index = () => {
   return (
     <div className="min-h-screen p-4 lg:p-8">
       <div className="mx-auto max-w-[1600px] space-y-6">
-        <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white/90 shadow-lg shadow-violet-950/5 backdrop-blur-xl">
-          <Card.Content className="flex flex-col gap-5 p-5 lg:flex-row lg:items-center lg:justify-between lg:p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/25">
-                <GraduationCap className="h-6 w-6" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2"><h1 className="text-xl font-extrabold normal-case tracking-tight lg:text-2xl">Teachers Payrolls</h1><Sparkles className="h-4 w-4 text-violet-500" /></div>
-                <p className="mt-1 text-sm text-muted-foreground">Gestió de nòmines, hores i activitats</p>
-              </div>
-            </div>
-            <nav className="flex flex-wrap items-center gap-2" aria-label="Seccions principals">
-              <Button variant={activeTab === "payroll" ? "primary" : "ghost"} onPress={() => setActiveTab("payroll")}><BookOpenCheck className="h-4 w-4" />Nòmines</Button>
-              <Button variant={activeTab === "activities" ? "primary" : "ghost"} onPress={() => setActiveTab("activities")}><GraduationCap className="h-4 w-4" />Activitats / Escoles</Button>
-              <Button variant={activeTab === "stats" ? "primary" : "ghost"} onPress={() => setActiveTab("stats")}><BarChart3 className="h-4 w-4" />Estadístiques</Button>
-              <Link to="/history" className="inline-flex h-10 items-center gap-2 px-4 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">
-                <History className="h-4 w-4" />Historial
-              </Link>
-              <Link to="/import-export" className="inline-flex h-10 items-center gap-2 px-4 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">
-                <ArrowLeftRight className="h-4 w-4" />Importar / Exportar
-              </Link>
-            </nav>
-          </Card.Content>
-        </Card>
 
         {activeTab === "payroll" ? (
         <div className="flex flex-col gap-5 lg:flex-row">
