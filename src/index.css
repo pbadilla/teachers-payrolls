@@ -66,6 +66,10 @@
 @layer base {
   * {
     @apply border-border;
+  }
+
+  /* Suite-wide rule: boxes are rounded 4px at most; circles and pills keep their shape. */
+  *:not(.rounded-full) {
     border-radius: 4px !important;
   }
 
