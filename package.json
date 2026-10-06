@@ -9,6 +9,7 @@
     "dev:api": "node --watch server/index.mjs",
     "start:api": "node server/index.mjs",
     "build": "vite build",
+    "build:cloudflare": "BASE_PATH=/nominas/ vite build && rm -rf .cloudflare && mkdir -p .cloudflare && cp -r dist .cloudflare/nominas && cp dist/index.html .cloudflare/index.html",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -20,4 +20,4 @@ services:
       - key: MONGODB_DB
         sync: false
       - key: CLIENT_ORIGIN
-        value: https://nominas.rollergrind360.com
+        value: https://tools.rollergrind360.com

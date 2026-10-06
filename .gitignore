@@ -24,3 +24,6 @@ server/.env
 *.njsproj
 *.sln
 *.sw?
+
+# Cloudflare build output
+.cloudflare

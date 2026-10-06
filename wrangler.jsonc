@@ -1,9 +1,11 @@
 // Cloudflare Workers (static assets only), deployed by Workers Builds from GitHub.
+// Served at https://tools.rollergrind360.com/nominas — build with `bun run build:cloudflare`.
 {
   "name": "rg360-nominas",
   "compatibility_date": "2026-10-01",
+  "routes": [{ "pattern": "tools.rollergrind360.com/nominas*", "zone_name": "rollergrind360.com" }],
   "assets": {
-    "directory": "./dist",
+    "directory": "./.cloudflare",
     "not_found_handling": "single-page-application"
   }
 }
