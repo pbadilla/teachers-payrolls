@@ -1,4 +1,4 @@
-import type { Activity, MonthlyRecord, Teacher } from "@/types/teacher";
+import type { Activity, HoursEntry, MonthlyRecord, Teacher } from "@/types/teacher";
 
 export type Dataset = "teachers" | "activities" | "records";
 export type PayrollData = { teachers: Teacher[]; activities: Activity[]; records: MonthlyRecord[] };
@@ -20,6 +20,7 @@ const serialize = (dataset: Dataset, data: PayrollData) => {
   return data.records.map((record) => ({
     teacherId: record.teacherId, month: record.month, hours: record.hours,
     entries: JSON.stringify(record.entries ?? []),
+    hourlyRate: record.hourlyRate ?? "", adjustment: record.adjustment ?? "",
   }));
 };
 
@@ -38,9 +39,13 @@ const parseRows = (dataset: Dataset, rows: Record<string, unknown>[]) => {
     return activity;
   });
   return rows.map((row, index) => {
+    const entries = safeJson<HoursEntry[]>(row.entries, []);
+    const optionalNumber = (value: unknown) => (value === undefined || value === null || value === "" ? undefined : Number(value));
     const record = {
       teacherId: String(row.teacherId ?? "").trim(), month: String(row.month ?? "").trim(),
-      hours: Number(row.hours), entries: safeJson(row.entries, []),
+      // Records filled from the calendar have hours but no entries: keep them that way.
+      hours: Number(row.hours), ...(entries.length ? { entries } : {}),
+      hourlyRate: optionalNumber(row.hourlyRate), adjustment: optionalNumber(row.adjustment),
     };
     if (!record.teacherId || !/^\d{4}-(0[1-9]|1[0-2])$/.test(record.month) || !Number.isFinite(record.hours)) throw new Error(`Invalid payroll row ${index + 2}`);
     return record as MonthlyRecord;

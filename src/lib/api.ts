@@ -1,3 +1,4 @@
+import type { CalendarMonth } from "@/types/calendar";
 import type { Activity, MonthlyRecord, PayrollMonthState, Teacher } from "@/types/teacher";
 
 // VITE_API_URL points to the standalone API (e.g. https://nominas-api.rollergrind360.com/api).
@@ -36,22 +37,19 @@ export const api = {
     request<Teacher>(`/teachers/${teacher.id}`, { method: "PUT", body: JSON.stringify(teacher) }),
   deleteTeacher: (id: string) => request<void>(`/teachers/${id}`, { method: "DELETE" }),
   addActivity: (activity: Activity) => request<Activity>("/activities", { method: "POST", body: JSON.stringify(activity) }),
+  updateActivity: (activity: Omit<Activity, "weekDay" | "places"> & { weekDay?: number | null; places?: number | null }) =>
+    request<Activity>(`/activities/${activity.id}`, { method: "PUT", body: JSON.stringify(activity) }),
   deleteActivity: (id: string) => request<void>(`/activities/${id}`, { method: "DELETE" }),
   updateRecord: (record: MonthlyRecord) =>
     request<MonthlyRecord>(`/records/${record.teacherId}/${record.month}`, {
       method: "PUT",
       body: JSON.stringify({ hours: record.hours, entries: record.entries }),
     }),
-  updatePayrollMonth: (state: PayrollMonthState) =>
-    request<PayrollMonthState>(`/payroll-months/${state.month}`, {
-      method: "PUT",
-      body: JSON.stringify({ status: state.status, locked: state.locked }),
-    }),
-  copyPayrollMonth: (sourceMonth: string, targetMonth: string, overwrite = false) =>
-    request<{ copied: number }>("/payroll-months/copy", {
-      method: "POST",
-      body: JSON.stringify({ sourceMonth, targetMonth, overwrite }),
-    }),
+  getCalendar: (month: string) => request<CalendarMonth>(`/calendar/${month}`),
+  saveCalendar: (calendar: CalendarMonth) =>
+    request<CalendarMonth>(`/calendar/${calendar.month}`, { method: "PUT", body: JSON.stringify(calendar) }),
+  applyCalendar: (month: string, records: { teacherId: string; hours: number; hourlyRate?: number; adjustment?: number }[]) =>
+    request<{ updated: number }>(`/records/${month}`, { method: "PUT", body: JSON.stringify({ records }) }),
   importData: (data: { teachers?: Teacher[]; records?: MonthlyRecord[]; activities?: Activity[] }) =>
     request<{ teachers: number; records: number; activities: number }>("/import", {
       method: "POST",

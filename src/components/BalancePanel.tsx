@@ -1,74 +1,71 @@
-import { Teacher, MonthlyRecord, recordHours, recordPayment } from "@/types/teacher";
+import { AmountInput } from "./AmountInput";
+import type { CalendarPayroll } from "./calendar/useCalendarPayroll";
 
 interface Props {
-  teachers: Teacher[];
-  records: MonthlyRecord[];
-  selectedMonth: string;
+  payroll: CalendarPayroll;
   monthLabel: string;
+  locked: boolean;
 }
 
-export function BalancePanel({ teachers, records, selectedMonth, monthLabel }: Props) {
-  const getRecord = (id: string) => records.find(r => r.teacherId === id && r.month === selectedMonth);
-  const getHours = (id: string) => recordHours(getRecord(id));
-  const getPayment = (t: Teacher) => recordPayment(getRecord(t.id), t);
+const euros = (value: number) => `${value.toFixed(2)} €`;
 
-  const totalHours = teachers.reduce((s, t) => s + getHours(t.id), 0);
-  const totalPayment = teachers.reduce((s, t) => s + getPayment(t), 0);
-  const codedPayment = teachers.filter(t => t.type === "coded").reduce((s, t) => s + getPayment(t), 0);
-  const efectiuPayment = teachers.filter(t => t.type === "efectiu").reduce((s, t) => s + getPayment(t), 0);
+/** The month's totals (the same figures as the payroll table), social security, income and balance. */
+export function BalancePanel({ payroll, monthLabel, locked }: Props) {
+  const { calendar, rows, change } = payroll;
+  const teachersPay = rows.reduce((sum, row) => sum + row.pay, 0);
+  const totalSessions = rows.reduce((sum, row) => sum + row.sessions, 0);
+  const total = teachersPay + (calendar.socialSecurity ?? 0);
+  const income = (calendar.schoolIncome ?? 0) + (calendar.shopIncome ?? 0);
+  const payOf = (type: "coded" | "efectiu") => rows.filter((row) => row.teacher.type === type).reduce((sum, row) => sum + row.pay, 0);
+  const amountRow = (label: string, key: "socialSecurity" | "schoolIncome" | "shopIncome") => (
+    <div className="flex items-center justify-between gap-2 text-xs font-mono">
+      <span className="text-muted-foreground">{label}</span>
+      <AmountInput label={label} value={calendar[key]} placeholder="0" disabled={locked} onCommit={(value) => change({ ...calendar, [key]: value })} />
+    </div>
+  );
 
   return (
     <div className="sticky top-4 h-fit overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="ledger-header text-center">RESUM — {monthLabel.toUpperCase()}</div>
-      
-      <div className="p-4 space-y-4">
+
+      <div className="space-y-4 p-4">
         <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-          <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1">Total a pagar</div>
-          <div className="text-2xl font-mono font-bold text-destructive tabular-nums">
-            {totalPayment.toFixed(2)} €
+          <div className="mb-1 text-xs font-heading uppercase tracking-widest text-muted-foreground">Total a pagar</div>
+          <div className="text-2xl font-mono font-bold tabular-nums text-destructive">{euros(total)}</div>
+          <div className="mt-1 text-[11px] font-mono text-muted-foreground">Profes {euros(teachersPay)}</div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+            <div className="mb-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground">Sessions</div>
+            <div className="text-lg font-mono font-bold tabular-nums">{totalSessions}</div>
           </div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-          <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1">Total hores</div>
-          <div className="text-2xl font-mono font-bold tabular-nums">{totalHours}</div>
-        </div>
-
-        <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
-          <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-1">Profes</div>
-          <div className="text-lg font-mono tabular-nums">{teachers.length}</div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+            <div className="mb-1 text-[10px] font-heading uppercase tracking-widest text-muted-foreground">Profes</div>
+            <div className="text-lg font-mono tabular-nums">{rows.length}</div>
+          </div>
         </div>
 
         <div className="space-y-2 border-t border-slate-200 pt-3">
           <div className="flex justify-between text-xs font-mono">
             <span className="text-muted-foreground">TRANSFERÈNCIA</span>
-            <span className="tabular-nums text-destructive">{codedPayment.toFixed(2)} €</span>
+            <span className="tabular-nums text-destructive">{euros(payOf("coded"))}</span>
           </div>
           <div className="flex justify-between text-xs font-mono">
             <span className="text-muted-foreground">EFECTIU</span>
-            <span className="tabular-nums text-destructive">{efectiuPayment.toFixed(2)} €</span>
+            <span className="tabular-nums text-destructive">{euros(payOf("efectiu"))}</span>
           </div>
+          {amountRow("SEG. SOCIAL", "socialSecurity")}
         </div>
 
-        {/* Hours bar */}
-        {totalHours > 0 && (
-          <div className="rounded-lg border border-slate-200 p-3">
-            <div className="text-xs font-heading uppercase tracking-widest text-muted-foreground mb-2">Distribució hores</div>
-            <div className="flex h-3 overflow-hidden rounded-full bg-slate-100">
-              {teachers.filter(t => getHours(t.id) > 0).map((t, i) => (
-                <div
-                  key={t.id}
-                  className="h-full border-r border-white last:border-r-0"
-                  style={{
-                    width: `${(getHours(t.id) / totalHours) * 100}%`,
-                    backgroundColor: i % 2 === 0 ? 'hsl(0 0% 10%)' : 'hsl(155 30% 32%)',
-                  }}
-                  title={`${t.name}: ${getHours(t.id)}h`}
-                />
-              ))}
-            </div>
+        <div className="space-y-2 border-t border-slate-200 pt-3">
+          {amountRow("INGRESSOS ESCOLES", "schoolIncome")}
+          {amountRow("INGRESSOS BOTIGA", "shopIncome")}
+          <div className="flex justify-between text-xs font-mono font-bold">
+            <span>SALDO</span>
+            <span className={`tabular-nums ${income - total < 0 ? "text-destructive" : "text-emerald-700"}`}>{euros(income - total)}</span>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

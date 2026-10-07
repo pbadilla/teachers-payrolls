@@ -1,4 +1,4 @@
-import { ArrowLeftRight, BarChart3, BookOpenCheck, GraduationCap, History } from "lucide-react";
+import { ArrowLeftRight, BarChart3, BookOpenCheck, CalendarCheck, GraduationCap, History } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import logo from "@/assets/logo-rg360.png";
@@ -6,6 +6,7 @@ import { SUITE_HOME_URL } from "@/lib/suite";
 
 // Payroll, activities and stats are tabs of the home page (?tab=…); the rest are routes.
 const items = [
+  { to: "/calendar", label: "Calendari", icon: CalendarCheck },
   { to: "/", tab: "payroll", label: "Nòmines", icon: BookOpenCheck },
   { to: "/?tab=activities", tab: "activities", label: "Activitats / Escoles", icon: GraduationCap },
   { to: "/?tab=stats", tab: "stats", label: "Estadístiques", icon: BarChart3 },

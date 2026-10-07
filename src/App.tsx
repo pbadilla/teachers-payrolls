@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import History from "./pages/History.tsx";
 import ImportExport from "./pages/ImportExport.tsx";
+import Calendar from "./pages/Calendar.tsx";
 import { SuiteHeader } from "./components/layout/SuiteHeader";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,8 @@ const App = () => (
         <SuiteHeader />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/agenda" element={<Navigate to="/calendar" replace />} />
+          <Route path="/calendar" element={<Calendar />} />
           <Route path="/history" element={<History />} />
           <Route path="/import-export" element={<ImportExport />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

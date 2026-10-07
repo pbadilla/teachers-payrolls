@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { Activity, HoursEntry, Teacher, MonthlyRecord, PayrollMonthState, recordHours, recordPayment } from "@/types/teacher";
-import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Lock, Search, Unlock } from "lucide-react";
+import { Activity, HoursEntry, Teacher, MonthlyRecord, PayrollMonthState } from "@/types/teacher";
+import { ArrowDown, ArrowUp, ArrowUpDown, Lock, Search, Send } from "lucide-react";
+import { AmountInput } from "./AmountInput";
+import type { CalendarPayroll } from "./calendar/useCalendarPayroll";
 import { EditHoursDialog } from "./EditHoursDialog";
 import { MonthSelector } from "./MonthSelector";
 import { AddTeacherDialog } from "./AddTeacherDialog";
@@ -11,55 +13,55 @@ interface Props {
   activities: Activity[];
   selectedMonth: string;
   monthLabel: string;
+  /** The month's sessions × rate from the Calendari: the payroll shown and edited here. */
+  payroll: CalendarPayroll;
   onMonthChange: (month: string) => void;
   onUpdateRecord: (teacherId: string, entries: HoursEntry[]) => void;
   onUpdateTeacher: (teacher: Teacher) => void;
   onDeleteTeacher: (id: string) => void;
   onAddTeacher: (teacher: Omit<Teacher, "id">, entries: HoursEntry[]) => boolean | void | Promise<boolean | void>;
   payrollState: PayrollMonthState;
-  onPayrollStateChange: (state: PayrollMonthState) => void;
-  onCopyMonth: (sourceMonth: string, targetMonth: string) => Promise<boolean>;
 }
 
 const ITEMS_PER_PAGE = 15;
 
+/**
+ * The month's payroll, one row per teacher: sessions from the Calendari × the month's rate, plus an
+ * adjustment. "Desar la nòmina" writes it to the payroll records (history and statistics).
+ */
 export function TeacherLedger({
-  teachers, records, activities, selectedMonth, monthLabel,
+  teachers, records, activities, selectedMonth, monthLabel, payroll,
   onMonthChange, onUpdateRecord, onUpdateTeacher, onDeleteTeacher, onAddTeacher,
-  payrollState, onPayrollStateChange, onCopyMonth,
+  payrollState,
 }: Props) {
   const [page, setPage] = useState(1);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [schoolFilter, setSchoolFilter] = useState("");
   const [activityFilter, setActivityFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "hours" | "total">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [missingOnly, setMissingOnly] = useState(false);
-  const [duplicateTarget, setDuplicateTarget] = useState("");
+  // Only the teachers who have something this month, unless asked for all of them.
+  const [workedOnly, setWorkedOnly] = useState(true);
 
-  const schools = activities.filter((item) => item.kind === "school");
   const activityOptions = activities.filter((item) => item.kind !== "school");
 
   const getHours = (teacherId: string) => {
-    const rec = records.find(r => r.teacherId === teacherId && r.month === selectedMonth);
-    return recordHours(rec);
+    const teacher = teachers.find((item) => item.id === teacherId);
+    return teacher ? payroll.rowFor(teacher).sessions : 0;
   };
 
-  const getPayment = (teacher: Teacher) => {
-    return recordPayment(records.find(r => r.teacherId === teacher.id && r.month === selectedMonth), teacher);
-  };
+  const getPayment = (teacher: Teacher) => payroll.rowFor(teacher).pay;
 
   const filteredTeachers = teachers.filter((teacher) => {
     const rates = teacher.rates ?? [];
     const matchesName = teacher.name.toLocaleLowerCase("ca").includes(query.trim().toLocaleLowerCase("ca"));
     const matchesPayment = !paymentFilter || teacher.type === paymentFilter;
     const matchesActivity = !activityFilter || rates.some((rate) => rate.activityId === activityFilter);
-    const matchesSchool = !schoolFilter || rates.some((rate) => activityOptions.find((item) => item.id === rate.activityId)?.schoolId === schoolFilter);
-    const matchesMissing = !missingOnly || getHours(teacher.id) === 0;
-    return matchesName && matchesPayment && matchesActivity && matchesSchool && matchesMissing;
+    const row = payroll.rowFor(teacher);
+    const matchesWorked = !workedOnly || row.sessions > 0 || row.adjustment !== 0;
+    return matchesName && matchesPayment && matchesActivity && matchesWorked;
   }).sort((first, second) => {
     let comparison = first.name.localeCompare(second.name, "ca", { sensitivity: "base" });
     if (sortBy === "hours") comparison = getHours(first.id) - getHours(second.id);
@@ -79,21 +81,10 @@ export function TeacherLedger({
     if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
   }, [page, totalPages]);
 
-  useEffect(() => setPage(1), [query, schoolFilter, activityFilter, paymentFilter, missingOnly, sortBy, sortDirection, selectedMonth]);
-  useEffect(() => {
-    const [year, month] = selectedMonth.split("-").map(Number);
-    const next = new Date(year, month, 1);
-    setDuplicateTarget(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`);
-  }, [selectedMonth]);
+  useEffect(() => setPage(1), [query, activityFilter, paymentFilter, workedOnly, sortBy, sortDirection, selectedMonth]);
 
   const totalHours = filteredTeachers.reduce((s, t) => s + getHours(t.id), 0);
   const totalPayment = filteredTeachers.reduce((s, t) => s + getPayment(t), 0);
-
-  const previousMonth = (() => {
-    const [year, month] = selectedMonth.split("-").map(Number);
-    const previous = new Date(year, month - 2, 1);
-    return `${previous.getFullYear()}-${String(previous.getMonth() + 1).padStart(2, "0")}`;
-  })();
 
   const changeSort = (column: "name" | "hours" | "total") => {
     if (sortBy === column) {
@@ -133,30 +124,26 @@ export function TeacherLedger({
         </div>
       </div>
 
-      <div className="space-y-3 border-b border-slate-200 bg-slate-50/70 p-4">
-        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
-          <label className="relative xl:col-span-2">
-            <span className="sr-only">Cercar professor</span>
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cercar professor..." className="h-10 w-full border border-slate-300 bg-white pl-9 pr-3 text-sm outline-none focus:border-violet-500" />
-          </label>
-          <select value={schoolFilter} onChange={(event) => setSchoolFilter(event.target.value)} aria-label="Filtrar per escola" className="h-10 border border-slate-300 bg-white px-3 text-sm"><option value="">Totes les escoles</option>{schools.map((school) => <option key={school.id} value={school.id}>{school.name}</option>)}</select>
-          <select value={activityFilter} onChange={(event) => setActivityFilter(event.target.value)} aria-label="Filtrar per activitat" className="h-10 border border-slate-300 bg-white px-3 text-sm"><option value="">Totes les activitats</option>{activityOptions.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}</select>
-          <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} aria-label="Filtrar per pagament" className="h-10 border border-slate-300 bg-white px-3 text-sm"><option value="">Tots els pagaments</option><option value="coded">Transferència</option><option value="efectiu">Efectiu</option></select>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <label className="flex items-center gap-2 text-xs font-semibold text-slate-600"><input type="checkbox" checked={missingOnly} onChange={(event) => setMissingOnly(event.target.checked)} /> Només sense hores</label>
-          <span className="text-xs text-slate-500">{filteredTeachers.length} de {teachers.length} professors</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-3">
-          <select value={payrollState.status} onChange={(event) => onPayrollStateChange({ ...payrollState, status: event.target.value as "pending" | "paid" })} disabled={payrollState.locked} aria-label="Estat de pagament" className="h-9 border border-slate-300 bg-white px-3 text-xs font-bold uppercase disabled:opacity-50"><option value="pending">Pendent</option><option value="paid">Pagada</option></select>
-          <button type="button" onClick={() => onPayrollStateChange({ ...payrollState, locked: !payrollState.locked })} className="flex h-9 items-center gap-2 border border-slate-300 bg-white px-3 text-xs font-bold uppercase hover:bg-slate-100">{payrollState.locked ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}{payrollState.locked ? "Desbloquejar" : "Bloquejar"}</button>
-          <button type="button" disabled={payrollState.locked} onClick={() => void onCopyMonth(previousMonth, selectedMonth)} className="flex h-9 items-center gap-2 border border-slate-300 bg-white px-3 text-xs font-bold uppercase hover:bg-slate-100 disabled:opacity-40"><Copy className="h-4 w-4" />Copiar mes anterior</button>
-          <div className="ml-auto flex items-center gap-2">
-            <input type="month" value={duplicateTarget} onChange={(event) => setDuplicateTarget(event.target.value)} aria-label="Mes de destí" className="h-9 border border-slate-300 bg-white px-2 text-xs" />
-            <button type="button" disabled={!duplicateTarget} onClick={() => void onCopyMonth(selectedMonth, duplicateTarget)} className="h-9 border border-slate-900 bg-slate-900 px-3 text-xs font-bold uppercase text-white disabled:opacity-40">Duplicar nòmina</button>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/70 p-4">
+        <label className="relative min-w-[200px] flex-1">
+          <span className="sr-only">Cercar professor</span>
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cercar professor..." className="h-10 w-full border border-slate-300 bg-white pl-9 pr-3 text-sm outline-none focus:border-violet-500" />
+        </label>
+        <select value={activityFilter} onChange={(event) => setActivityFilter(event.target.value)} aria-label="Filtrar per activitat" className="h-10 max-w-[220px] border border-slate-300 bg-white px-3 text-sm"><option value="">Totes les activitats</option>{activityOptions.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}</select>
+        <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} aria-label="Filtrar per pagament" className="h-10 border border-slate-300 bg-white px-3 text-sm"><option value="">Tots els pagaments</option><option value="coded">Transferència</option><option value="efectiu">Efectiu</option></select>
+        <label className="flex h-10 items-center gap-2 px-1 text-xs font-semibold text-slate-600"><input type="checkbox" checked={workedOnly} onChange={(event) => setWorkedOnly(event.target.checked)} /> Classes fetes</label>
+        <span className="text-xs text-slate-500">{filteredTeachers.length} de {teachers.length}</span>
+        <button
+          type="button"
+          disabled={payrollState.locked || payroll.applying || !payroll.rows.length}
+          onClick={payroll.apply}
+          title={payrollState.locked ? "La nòmina d'aquest mes està bloquejada" : "Desa les sessions del calendari a la nòmina (historial i estadístiques)"}
+          className="ml-auto flex h-10 items-center gap-2 bg-violet-600 px-4 text-xs font-bold uppercase text-white hover:bg-violet-700 disabled:opacity-50"
+        >
+          {payrollState.locked ? <Lock className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+          {payroll.applying ? "Desant…" : "Desar la nòmina"}
+        </button>
       </div>
 
       {/* Table */}
@@ -170,9 +157,10 @@ export function TeacherLedger({
               </th>
               <th className="ledger-header text-left hidden md:table-cell">CODI</th>
               <th className="ledger-header text-right" aria-sort={sortBy === "hours" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
-                <button type="button" onClick={() => changeSort("hours")} className="ml-auto flex items-center gap-1.5 hover:text-violet-700">HORES <SortIcon column="hours" /></button>
+                <button type="button" onClick={() => changeSort("hours")} className="ml-auto flex items-center gap-1.5 hover:text-violet-700">SESSIONS <SortIcon column="hours" /></button>
               </th>
-              <th className="ledger-header text-right hidden sm:table-cell">ACT.</th>
+              <th className="ledger-header text-right">PREU</th>
+              <th className="ledger-header text-right hidden sm:table-cell">AJUST</th>
               <th className="ledger-header text-right" aria-sort={sortBy === "total" ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
                 <button type="button" onClick={() => changeSort("total")} className="ml-auto flex items-center gap-1.5 hover:text-violet-700">TOTAL (€) <SortIcon column="total" /></button>
               </th>
@@ -202,7 +190,12 @@ export function TeacherLedger({
                     {t.code || "—"}
                   </td>
                   <td className="ledger-cell text-right tabular-nums">{hours}</td>
-                  <td className="ledger-cell text-right tabular-nums text-muted-foreground hidden sm:table-cell">{(t.rates?.length ?? 0) || 1}</td>
+                  <td className="ledger-cell text-right">
+                    <AmountInput label={`Preu de ${t.name}`} value={payroll.calendar.rates?.[t.id]} placeholder={String(t.hourlyRate)} disabled={payrollState.locked} onCommit={(value) => payroll.setTeacherValue("rates", t.id, value)} />
+                  </td>
+                  <td className="ledger-cell text-right hidden sm:table-cell">
+                    <AmountInput label={`Ajust de ${t.name}`} value={payroll.calendar.adjustments?.[t.id]} placeholder="0" disabled={payrollState.locked} onCommit={(value) => payroll.setTeacherValue("adjustments", t.id, value)} />
+                  </td>
                   <td className={`ledger-cell text-right tabular-nums font-bold ${payment > 0 ? "text-destructive" : "text-patina"}`}>
                     {payment.toFixed(2)}
                   </td>
@@ -225,7 +218,8 @@ export function TeacherLedger({
             <tr className="bg-slate-50">
               <td className="ledger-header" colSpan={3}>TOTALS</td>
               <td className="ledger-header text-right tabular-nums">{totalHours}</td>
-              <td className="ledger-header text-right tabular-nums hidden sm:table-cell"></td>
+              <td className="ledger-header"></td>
+              <td className="ledger-header hidden sm:table-cell"></td>
               <td className="ledger-header text-right tabular-nums text-destructive">{totalPayment.toFixed(2)}</td>
               <td className="ledger-header"></td>
             </tr>
