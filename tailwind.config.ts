@@ -18,6 +18,11 @@ export default {
         heading: ['"Archivo"', 'sans-serif'],
       },
       colors: {
+        // Brand purple rgb(81 36 91) (= violet-600): the violet-* classes follow it.
+        violet: {
+          50: "#f8f3f9", 100: "#f0e4f2", 200: "#e0c8e5", 300: "#c9a1d1", 400: "#a873b3", 500: "#7f4a8b",
+          600: "#51245b", 700: "#441e4c", 800: "#37183e", 900: "#2b1230", 950: "#1c0b20",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

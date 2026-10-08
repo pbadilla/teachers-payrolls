@@ -28,7 +28,8 @@
     --patina: 158 64% 40%;
     --patina-foreground: 0 0% 100%;
 
-    --primary: 262 83% 58%;
+    /* Brand purple: rgb(81 36 91). */
+    --primary: 289 43% 25%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 252 50% 95%;
@@ -37,8 +38,8 @@
     --muted: 240 24% 94%;
     --muted-foreground: 240 9% 46%;
 
-    --accent: 265 70% 93%;
-    --accent-foreground: 262 83% 38%;
+    --accent: 289 40% 94%;
+    --accent-foreground: 289 43% 25%;
 
     --card: 0 0% 100%;
     --card-foreground: 243 38% 17%;
@@ -48,7 +49,7 @@
 
     --border: 240 20% 89%;
     --input: 240 20% 89%;
-    --ring: 262 83% 58%;
+    --ring: 289 43% 25%;
 
     --radius: 4px;
 
@@ -78,7 +79,7 @@
     font-family: 'Archivo', sans-serif;
     -webkit-font-smoothing: antialiased;
     background-image:
-      radial-gradient(circle at 10% 0%, hsl(265 85% 94% / .9), transparent 34rem),
+      radial-gradient(circle at 10% 0%, hsl(289 45% 94% / .9), transparent 34rem),
       radial-gradient(circle at 90% 15%, hsl(205 90% 94% / .75), transparent 30rem);
     background-attachment: fixed;
   }
