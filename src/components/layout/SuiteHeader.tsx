@@ -1,4 +1,4 @@
-import { ArrowLeftRight, BarChart3, BookOpenCheck, CalendarCheck, GraduationCap, History } from "lucide-react";
+import { ArrowLeftRight, BarChart3, BookOpenCheck, CalendarCheck, GraduationCap, History, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 import logo from "@/assets/logo-rg360.png";
@@ -7,7 +7,8 @@ import { SUITE_HOME_URL } from "@/lib/suite";
 // Payroll, activities and stats are tabs of the home page (?tab=…); the rest are routes.
 const items = [
   { to: "/calendar", label: "Calendari", icon: CalendarCheck },
-  { to: "/", tab: "payroll", label: "Nòmines", icon: BookOpenCheck },
+  { to: "/teachers", label: "Professors", icon: Users },
+  { to: "/?tab=payroll", tab: "payroll", label: "Nòmines", icon: BookOpenCheck },
   { to: "/?tab=activities", tab: "activities", label: "Activitats / Escoles", icon: GraduationCap },
   { to: "/?tab=stats", tab: "stats", label: "Estadístiques", icon: BarChart3 },
   { to: "/history", label: "Historial", icon: History },
@@ -36,7 +37,7 @@ export function SuiteHeader() {
           <img src={logo} alt="RG360" className="h-7 w-auto" />
         </a>
         <span className="hidden h-6 w-px bg-slate-200 sm:block" aria-hidden="true" />
-        <Link to="/" className="shrink-0 text-sm font-bold tracking-tight hover:text-violet-700">
+        <Link to="/calendar" className="shrink-0 text-sm font-bold tracking-tight hover:text-violet-700">
           Nòmines
         </Link>
 

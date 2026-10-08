@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useSearchParams } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,9 +8,13 @@ import NotFound from "./pages/NotFound.tsx";
 import History from "./pages/History.tsx";
 import ImportExport from "./pages/ImportExport.tsx";
 import Calendar from "./pages/Calendar.tsx";
+import Teachers from "./pages/Teachers.tsx";
 import { SuiteHeader } from "./components/layout/SuiteHeader";
 
 const queryClient = new QueryClient();
+
+/** The app opens on the Calendari; payroll, activities and stats are tabs of "/" (?tab=…). */
+const Home = () => (useSearchParams()[0].has("tab") ? <Index /> : <Navigate to="/calendar" replace />);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -20,9 +24,10 @@ const App = () => (
       <BrowserRouter basename={import.meta.env.BASE_URL}>
         <SuiteHeader />
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<Home />} />
           <Route path="/agenda" element={<Navigate to="/calendar" replace />} />
           <Route path="/calendar" element={<Calendar />} />
+          <Route path="/teachers" element={<Teachers />} />
           <Route path="/history" element={<History />} />
           <Route path="/import-export" element={<ImportExport />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

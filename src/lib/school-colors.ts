@@ -21,6 +21,19 @@ export function schoolColors(activities: Activity[]): Map<string, string> {
   ]));
 }
 
+// Activities without a school ("Particulars") get a colour of their own, in alphabetical order.
+const OWN_ACTIVITY_ACCENTS = ["#6d28d9", "#be123c", "#15803d", "#b45309", "#0e7490"];
+
+/** Colour of each activity (not school): its school's, or its own when it has no school. */
+export function activityColors(activities: Activity[]): Map<string, string> {
+  const schools = schoolColors(activities);
+  const own = activities.filter((item) => item.kind !== "school" && !item.schoolId).sort((left, right) => left.name.localeCompare(right.name, "ca"));
+  return new Map(activities.filter((item) => item.kind !== "school").map((item) => [
+    item.id,
+    item.schoolId ? schools.get(item.schoolId) ?? NO_SCHOOL_COLOR : OWN_ACTIVITY_ACCENTS[own.indexOf(item) % OWN_ACTIVITY_ACCENTS.length],
+  ]));
+}
+
 /** "Escola Mare Nostrum" and "Mare Nostrum" are the same school. */
 export const schoolKey = (name: string) => normalizeName(name.replace(/^\s*escola\s+/i, ""));
 

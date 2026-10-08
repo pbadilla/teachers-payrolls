@@ -43,11 +43,11 @@ export default function ImportExport() {
     <div className="mx-auto max-w-5xl space-y-6">
       <header className="flex flex-wrap items-center justify-between gap-4 border border-slate-200 bg-white/90 p-5 shadow-lg shadow-violet-950/5 backdrop-blur-xl">
         <div className="flex items-center gap-4">
-          <Link to="/" className="flex h-10 w-10 items-center justify-center text-slate-600 transition hover:bg-violet-50 hover:text-violet-700" aria-label="Tornar"><ArrowLeft className="h-5 w-5" /></Link>
+          <Link to="/?tab=payroll" className="flex h-10 w-10 items-center justify-center text-slate-600 transition hover:bg-violet-50 hover:text-violet-700" aria-label="Tornar"><ArrowLeft className="h-5 w-5" /></Link>
           <div className="flex h-11 w-11 items-center justify-center bg-violet-100 text-violet-700"><FileSpreadsheet className="h-5 w-5" /></div>
           <div><h1 className="text-xl font-extrabold normal-case tracking-tight">Importar / Exportar</h1><p className="text-sm text-muted-foreground">Còpies de seguretat en Excel i CSV</p></div>
         </div>
-        <Link to="/" className="px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">Nòmines</Link>
+        <Link to="/?tab=payroll" className="px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-violet-50 hover:text-violet-700">Nòmines</Link>
       </header>
 
       <section className="grid gap-5 md:grid-cols-2">

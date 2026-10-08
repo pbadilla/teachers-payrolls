@@ -126,3 +126,20 @@ describe("calendar Excel import", () => {
     expect(result.months[0].days["2026-10-01"]).toMatchObject({ extra: [], assignments: [{ activityId: "particulars", teacherIds: ["m"] }] });
   });
 });
+
+describe("missed sessions", () => {
+  it("are listed but not counted for pay", async () => {
+    const { teacherSessions } = await import("@/lib/calendar");
+    const days = {
+      "2026-10-05": { main: ["a"], extra: [], assignments: [{ activityId: "x", teacherIds: ["a", "b"] }], missed: [{ teacherId: "a", activityId: "x", reason: "Malaltia" }] },
+      "2026-10-06": { main: ["a"], extra: [], missed: [{ teacherId: "a", row: "main" as const, reason: "Pluja" }] },
+    };
+    expect(Object.fromEntries(countSessions({ days }))).toEqual({ a: 1, b: 1 });
+    const sessions = teacherSessions({ days }, "a");
+    expect(sessions.map((session) => [session.date, session.activityId ?? session.row, session.missed?.reason])).toEqual([
+      ["2026-10-05", "main", undefined],
+      ["2026-10-05", "x", "Malaltia"],
+      ["2026-10-06", "main", "Pluja"],
+    ]);
+  });
+});

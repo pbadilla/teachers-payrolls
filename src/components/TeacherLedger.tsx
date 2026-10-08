@@ -1,11 +1,13 @@
-import { useEffect, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { Activity, HoursEntry, Teacher, MonthlyRecord, PayrollMonthState } from "@/types/teacher";
 import { ArrowDown, ArrowUp, ArrowUpDown, Lock, Search, Send } from "lucide-react";
 import { AmountInput } from "./AmountInput";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { shortDayLabel, teacherSessions } from "@/lib/calendar";
+import { activityColors, NO_SCHOOL_COLOR } from "@/lib/school-colors";
 import type { CalendarPayroll } from "./calendar/useCalendarPayroll";
 import { EditHoursDialog } from "./EditHoursDialog";
 import { MonthSelector } from "./MonthSelector";
-import { AddTeacherDialog } from "./AddTeacherDialog";
 
 interface Props {
   teachers: Teacher[];
@@ -19,11 +21,11 @@ interface Props {
   onUpdateRecord: (teacherId: string, entries: HoursEntry[]) => void;
   onUpdateTeacher: (teacher: Teacher) => void;
   onDeleteTeacher: (id: string) => void;
-  onAddTeacher: (teacher: Omit<Teacher, "id">, entries: HoursEntry[]) => boolean | void | Promise<boolean | void>;
   payrollState: PayrollMonthState;
 }
 
 const ITEMS_PER_PAGE = 15;
+const accentStyle = (color: string) => ({ "--activity-accent": color }) as CSSProperties;
 
 /**
  * The month's payroll, one row per teacher: sessions from the Calendari × the month's rate, plus an
@@ -31,7 +33,7 @@ const ITEMS_PER_PAGE = 15;
  */
 export function TeacherLedger({
   teachers, records, activities, selectedMonth, monthLabel, payroll,
-  onMonthChange, onUpdateRecord, onUpdateTeacher, onDeleteTeacher, onAddTeacher,
+  onMonthChange, onUpdateRecord, onUpdateTeacher, onDeleteTeacher,
   payrollState,
 }: Props) {
   const [page, setPage] = useState(1);
@@ -42,10 +44,22 @@ export function TeacherLedger({
   const [paymentFilter, setPaymentFilter] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "hours" | "total">("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  // Only the teachers who have something this month, unless asked for all of them.
-  const [workedOnly, setWorkedOnly] = useState(true);
 
   const activityOptions = activities.filter((item) => item.kind !== "school");
+  const activityName = new Map(activities.map((item) => [item.id, item.name]));
+  const colorOfActivity = activityColors(activities);
+  /** Days and activities (name and colour) of a teacher's sessions this month, as the Calendari has them. */
+  const sessionDays = (teacherId: string) => {
+    const days = new Map<string, { label: string; color: string; missed?: string }[]>();
+    for (const session of teacherSessions(payroll.calendar, teacherId)) {
+      const item: { label: string; color: string; missed?: string } = session.activityId
+        ? { label: activityName.get(session.activityId) ?? "Activitat eliminada", color: colorOfActivity.get(session.activityId) ?? NO_SCHOOL_COLOR }
+        : { label: session.row === "extra" ? "Sense activitat (fila blava)" : "Sense activitat", color: "" };
+      if (session.missed) item.missed = session.missed.reason;
+      days.set(session.date, [...(days.get(session.date) ?? []), item]);
+    }
+    return [...days];
+  };
 
   const getHours = (teacherId: string) => {
     const teacher = teachers.find((item) => item.id === teacherId);
@@ -59,9 +73,9 @@ export function TeacherLedger({
     const matchesName = teacher.name.toLocaleLowerCase("ca").includes(query.trim().toLocaleLowerCase("ca"));
     const matchesPayment = !paymentFilter || teacher.type === paymentFilter;
     const matchesActivity = !activityFilter || rates.some((rate) => rate.activityId === activityFilter);
-    const row = payroll.rowFor(teacher);
-    const matchesWorked = !workedOnly || row.sessions > 0 || row.adjustment !== 0;
-    return matchesName && matchesPayment && matchesActivity && matchesWorked;
+    // Only the teachers with sessions in the Calendari this month.
+    const worked = payroll.rowFor(teacher).sessions > 0;
+    return matchesName && matchesPayment && matchesActivity && worked;
   }).sort((first, second) => {
     let comparison = first.name.localeCompare(second.name, "ca", { sensitivity: "base" });
     if (sortBy === "hours") comparison = getHours(first.id) - getHours(second.id);
@@ -81,8 +95,10 @@ export function TeacherLedger({
     if (page > Math.max(totalPages, 1)) setPage(Math.max(totalPages, 1));
   }, [page, totalPages]);
 
-  useEffect(() => setPage(1), [query, activityFilter, paymentFilter, workedOnly, sortBy, sortDirection, selectedMonth]);
+  useEffect(() => setPage(1), [query, activityFilter, paymentFilter, sortBy, sortDirection, selectedMonth]);
 
+  // Teachers come from the Calendari: those with sessions this month.
+  const calendarTeachers = teachers.filter((teacher) => payroll.rowFor(teacher).sessions > 0).length;
   const totalHours = filteredTeachers.reduce((s, t) => s + getHours(t.id), 0);
   const totalPayment = filteredTeachers.reduce((s, t) => s + getPayment(t), 0);
 
@@ -116,11 +132,10 @@ export function TeacherLedger({
       <div className="flex flex-col gap-4 border-b border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-heading text-2xl tracking-tight">NÒMINES PROFES</h1>
-          <span className="text-xs font-mono text-muted-foreground">{monthLabel}</span>
+          <span className="text-xs font-mono text-muted-foreground">{monthLabel} · {calendarTeachers} professors al calendari</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <MonthSelector selectedMonth={selectedMonth} onChange={onMonthChange} />
-          <AddTeacherDialog activities={activities} onAdd={onAddTeacher} disabled={payrollState.locked} />
         </div>
       </div>
 
@@ -132,8 +147,7 @@ export function TeacherLedger({
         </label>
         <select value={activityFilter} onChange={(event) => setActivityFilter(event.target.value)} aria-label="Filtrar per activitat" className="h-10 max-w-[220px] border border-slate-300 bg-white px-3 text-sm"><option value="">Totes les activitats</option>{activityOptions.map((activity) => <option key={activity.id} value={activity.id}>{activity.name}</option>)}</select>
         <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} aria-label="Filtrar per pagament" className="h-10 border border-slate-300 bg-white px-3 text-sm"><option value="">Tots els pagaments</option><option value="coded">Transferència</option><option value="efectiu">Efectiu</option></select>
-        <label className="flex h-10 items-center gap-2 px-1 text-xs font-semibold text-slate-600"><input type="checkbox" checked={workedOnly} onChange={(event) => setWorkedOnly(event.target.checked)} /> Classes fetes</label>
-        <span className="text-xs text-slate-500">{filteredTeachers.length} de {teachers.length}</span>
+        <span className="text-xs text-slate-500">{filteredTeachers.length} de {calendarTeachers}</span>
         <button
           type="button"
           disabled={payrollState.locked || payroll.applying || !payroll.rows.length}
@@ -189,7 +203,36 @@ export function TeacherLedger({
                   <td className="ledger-cell text-xs text-muted-foreground hidden md:table-cell">
                     {t.code || "—"}
                   </td>
-                  <td className="ledger-cell text-right tabular-nums">{hours}</td>
+                  <td className="ledger-cell text-right tabular-nums">
+                    <Tooltip delayDuration={200}>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-help border-b border-dotted border-slate-400">{hours}</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="left" className="max-w-xs p-3 text-xs">
+                        <p className="mb-1.5 font-bold text-slate-800">{t.name} · {hours} sessions</p>
+                        <ul className="max-h-72 space-y-1 overflow-y-auto text-left">
+                          {sessionDays(t.id).map(([date, items]) => (
+                            <li key={date} className="flex items-start gap-2">
+                              <span className="w-[4.5rem] shrink-0 pt-0.5 font-bold tabular-nums text-slate-800">{shortDayLabel(date)}</span>
+                              <span className="flex flex-wrap gap-1">
+                                {items.map((item, index) => item.missed ? (
+                                  <span key={index} className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-700" title={item.missed}>
+                                    <span className="line-through">{item.label}</span> · No feta
+                                  </span>
+                                ) : item.color ? (
+                                  <span key={index} className="activity-pill inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold" style={accentStyle(item.color)}>
+                                    <span className="activity-swatch h-1.5 w-1.5 rounded-full" aria-hidden="true" />{item.label}
+                                  </span>
+                                ) : (
+                                  <span key={index} className="inline-flex items-center rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-[11px] text-slate-500">{item.label}</span>
+                                ))}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </td>
                   <td className="ledger-cell text-right">
                     <AmountInput label={`Preu de ${t.name}`} value={payroll.calendar.rates?.[t.id]} placeholder={String(t.hourlyRate)} disabled={payrollState.locked} onCommit={(value) => payroll.setTeacherValue("rates", t.id, value)} />
                   </td>

@@ -9,15 +9,14 @@ interface Props {
 
 const euros = (value: number) => `${value.toFixed(2)} €`;
 
-/** The month's totals (the same figures as the payroll table), social security, income and balance. */
+/** The month's totals (the same figures as the payroll table) and social security. */
 export function BalancePanel({ payroll, monthLabel, locked }: Props) {
   const { calendar, rows, change } = payroll;
   const teachersPay = rows.reduce((sum, row) => sum + row.pay, 0);
   const totalSessions = rows.reduce((sum, row) => sum + row.sessions, 0);
   const total = teachersPay + (calendar.socialSecurity ?? 0);
-  const income = (calendar.schoolIncome ?? 0) + (calendar.shopIncome ?? 0);
   const payOf = (type: "coded" | "efectiu") => rows.filter((row) => row.teacher.type === type).reduce((sum, row) => sum + row.pay, 0);
-  const amountRow = (label: string, key: "socialSecurity" | "schoolIncome" | "shopIncome") => (
+  const amountRow = (label: string, key: "socialSecurity") => (
     <div className="flex items-center justify-between gap-2 text-xs font-mono">
       <span className="text-muted-foreground">{label}</span>
       <AmountInput label={label} value={calendar[key]} placeholder="0" disabled={locked} onCommit={(value) => change({ ...calendar, [key]: value })} />
@@ -56,15 +55,6 @@ export function BalancePanel({ payroll, monthLabel, locked }: Props) {
             <span className="tabular-nums text-destructive">{euros(payOf("efectiu"))}</span>
           </div>
           {amountRow("SEG. SOCIAL", "socialSecurity")}
-        </div>
-
-        <div className="space-y-2 border-t border-slate-200 pt-3">
-          {amountRow("INGRESSOS ESCOLES", "schoolIncome")}
-          {amountRow("INGRESSOS BOTIGA", "shopIncome")}
-          <div className="flex justify-between text-xs font-mono font-bold">
-            <span>SALDO</span>
-            <span className={`tabular-nums ${income - total < 0 ? "text-destructive" : "text-emerald-700"}`}>{euros(income - total)}</span>
-          </div>
         </div>
       </div>
     </div>

@@ -72,8 +72,17 @@ const sanitizeCalendarMonth = (month, body) => {
       if (existing) existing.teacherIds = [...new Set([...existing.teacherIds, ...teacherIds])];
       else assignments.push({ activityId: assignment.activityId, teacherIds });
     }
-    if (main.length || extra.length || note || incidents.length || assignments.length) {
-      days[date] = { main, extra, ...(note ? { note } : {}), ...(incidents.length ? { incidents } : {}), ...(assignments.length ? { assignments } : {}) };
+    // Groups of the club's agenda deleted from that day.
+    const hiddenGroups = ids(day?.hiddenGroups);
+    // Sessions not done (teacher + activity or Excel row) and why.
+    const missed = (Array.isArray(day?.missed) ? day.missed : []).flatMap((mark) => {
+      const reason = typeof mark?.reason === "string" ? mark.reason.trim().slice(0, 300) : "";
+      if (typeof mark?.teacherId !== "string" || !mark.teacherId || !reason) return [];
+      if (typeof mark.activityId === "string" && mark.activityId) return [{ teacherId: mark.teacherId, activityId: mark.activityId, reason }];
+      return mark.row === "main" || mark.row === "extra" ? [{ teacherId: mark.teacherId, row: mark.row, reason }] : [];
+    });
+    if (main.length || extra.length || note || incidents.length || assignments.length || hiddenGroups.length) {
+      days[date] = { main, extra, ...(note ? { note } : {}), ...(incidents.length ? { incidents } : {}), ...(assignments.length ? { assignments } : {}), ...(hiddenGroups.length ? { hiddenGroups } : {}), ...(missed.length ? { missed } : {}) };
     }
   }
   // Per-teacher rate and adjustment of the month, keyed by teacher id.
